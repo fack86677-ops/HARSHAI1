@@ -147,6 +147,45 @@ export default async function handler(req, res) {
       hinglishField === 'true' ||
       hinglishField === true;
 
+    // ─── TIER & PERMISSION SECURITY (FREE VS PRO) ───
+    const planRaw = (Array.isArray(fields.plan) ? fields.plan[0] : (fields.plan || fields.tier || req.headers['x-user-plan'] || 'free')).toString().trim().toLowerCase();
+    const userCredits = Number(Array.isArray(fields.credits) ? fields.credits[0] : (fields.credits !== undefined ? fields.credits : 10));
+
+    const audioEnhanceRaw = (Array.isArray(fields.audio_enhance) ? fields.audio_enhance[0] : fields.audio_enhance);
+    const audioEnhance = audioEnhanceRaw === 'true' || audioEnhanceRaw === true;
+
+    const emojisRaw = (Array.isArray(fields.emojis) ? fields.emojis[0] : fields.emojis);
+    const emojis = emojisRaw === 'true' || emojisRaw === true;
+
+    // If a free user attempts to enable audio_enhance or emojis, reject immediately
+    if (planRaw === 'free') {
+      if (audioEnhance) {
+        return res.status(403).json({
+          success: false,
+          error: '403 Forbidden: Audio Enhancement is locked for Free users. Please upgrade to Pro.',
+          required_plan: 'pro',
+          upgrade_url: '/pricing'
+        });
+      }
+      if (emojis) {
+        return res.status(403).json({
+          success: false,
+          error: '403 Forbidden: Add Emojis is locked for Free users. Please upgrade to Pro.',
+          required_plan: 'pro',
+          upgrade_url: '/pricing'
+        });
+      }
+    }
+
+    // ─── CREDIT DEDUCTION CHECK FOR PRO USERS ───
+    if (planRaw === 'pro' && userCredits < 1) {
+      return res.status(402).json({
+        success: false,
+        error: 'Insufficient AI credits to generate captions. Please recharge or upgrade.',
+        remaining_credits: 0
+      });
+    }
+
     // Read file buffer and prepare Web standard Blob
     const fileBuffer = fs.readFileSync(file.filepath);
     const mimeType = file.mimetype || 'video/mp4';
@@ -283,6 +322,8 @@ export default async function handler(req, res) {
       };
     });
 
+    const remainingCredits = planRaw === 'pro' ? Math.max(0, userCredits - 1) : userCredits;
+
     return res.status(200).json({
       success: true,
       captions: captions,
@@ -290,7 +331,9 @@ export default async function handler(req, res) {
       has_speech: captions.length > 0,
       language: isHinglish ? 'Hinglish' : langRaw,
       message: captions.length > 0 ? 'Captions successfully generated' : 'No detectable speech found in audio',
-      remaining_credits: 100
+      plan: planRaw,
+      deducted_credits: planRaw === 'pro' ? 1 : 0,
+      remaining_credits: remainingCredits
     });
 
   } catch (err) {

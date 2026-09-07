@@ -16,6 +16,7 @@ class KalakarEditor {
     this.initTranscriptDOM();
     this.initTemplatesGrid();
     this.initExportModal();
+    this.initTierAndAITools();
     this.initHistoryAndShortcuts();
     this.loadSavedFonts();
   }
@@ -234,7 +235,9 @@ class KalakarEditor {
 
     if (exportBtn && modal) {
       exportBtn.addEventListener('click', () => {
+        if (window.updateTierUI) window.updateTierUI();
         modal.classList.remove('hidden');
+        modal.style.display = 'flex';
       });
     }
 
@@ -245,10 +248,80 @@ class KalakarEditor {
       });
     }
 
+    // Resolution radio selection & PRO locks
+    const label1080 = document.getElementById('label-res-1080p');
+    const label4k = document.getElementById('label-res-4k');
+    const exportBtnLabel = document.getElementById('export-btn-label');
+
+    if (label1080) {
+      label1080.addEventListener('click', (e) => {
+        const plan = (typeof window.getUserPlan === 'function') ? window.getUserPlan() : 'free';
+        if (plan === 'free') {
+          e.preventDefault();
+          if (window.showUpgradeModal) {
+            window.showUpgradeModal('1080p Full HD export is locked on the Free plan. Upgrade to Creator Pro to unlock!');
+          }
+        }
+      });
+    }
+
+    if (label4k) {
+      label4k.addEventListener('click', (e) => {
+        const plan = (typeof window.getUserPlan === 'function') ? window.getUserPlan() : 'free';
+        if (plan === 'free') {
+          e.preventDefault();
+          if (window.showUpgradeModal) {
+            window.showUpgradeModal('4K Ultra HD export is locked on the Free plan. Upgrade to Creator Pro to unlock!');
+          }
+        }
+      });
+    }
+
+    document.querySelectorAll('input[name="export-res"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        const res = e.target.value;
+        const plan = (typeof window.getUserPlan === 'function') ? window.getUserPlan() : 'free';
+        if (plan === 'free' && (res === '1080p' || res === '4k')) {
+          const radio720 = document.getElementById('radio-res-720p');
+          if (radio720) radio720.checked = true;
+          if (window.showUpgradeModal) {
+            window.showUpgradeModal(`${res.toUpperCase()} export is locked on the Free plan. Free tier exports in 720p HD. Upgrade to unlock!`);
+          }
+          return;
+        }
+        if (exportBtnLabel) {
+          exportBtnLabel.textContent = `Download (${res.toUpperCase()} ${res === '720p' ? 'HD' : (res === '1080p' ? 'FHD' : 'Ultra')})`;
+        }
+      });
+    });
+
     if (confirmExportBtn) {
       confirmExportBtn.addEventListener('click', async () => {
         const exportType = document.querySelector('input[name="export-format"]:checked')?.value || 'mp4';
         const exportRes = document.querySelector('input[name="export-res"]:checked')?.value || '1080p';
+
+        const plan = (typeof window.getUserPlan === 'function') ? window.getUserPlan() : 'free';
+        const credits = (typeof window.getCredits === 'function') ? window.getCredits() : 0;
+
+        // 1. Enforce Free tier 720p restriction
+        if (plan === 'free' && (exportRes === '1080p' || exportRes === '4k')) {
+          if (window.showUpgradeModal) {
+            window.showUpgradeModal(`${exportRes.toUpperCase()} export is locked for Free users. Free tier includes 720p HD. Upgrade to Creator Pro!`);
+          } else {
+            alert(`${exportRes.toUpperCase()} export is locked for Free users. Please select 720p HD or upgrade to Pro.`);
+          }
+          return;
+        }
+
+        // 2. Enforce Pro user credits
+        if (plan === 'pro' && credits < 1) {
+          if (window.showUpgradeModal) {
+            window.showUpgradeModal('You have 0 credits remaining. Please recharge your credits to export videos.');
+          } else {
+            alert('Insufficient credits. Please recharge your account.');
+          }
+          return;
+        }
 
         const captions = (this.timeline && this.timeline.timeline && this.timeline.timeline.captions) 
           ? this.timeline.timeline.captions 
@@ -259,20 +332,68 @@ class KalakarEditor {
         confirmExportBtn.disabled = true;
 
         try {
+          // Backend Tier & Permission Validation call
+          let apiBase = (typeof window.getApiBase === 'function') ? window.getApiBase() : (window.API_BASE || '');
+          if (window.location.protocol === 'https:' && apiBase.startsWith('http://')) {
+            apiBase = apiBase.replace(/^http:\/\//i, 'https://');
+          }
+
+          const authRes = await fetch(`${apiBase}/api/export`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: exportType,
+              resolution: exportRes,
+              plan: plan,
+              credits: credits,
+              title: proj.title || 'video_captions',
+              captions: captions.slice(0, 50)
+            })
+          });
+
+          if (authRes.status === 403) {
+            const errData = await authRes.json().catch(() => ({}));
+            if (window.showUpgradeModal) {
+              window.showUpgradeModal(errData.error || 'This export resolution is locked for Free users. Upgrade to Pro!');
+            } else {
+              alert(errData.error || '403 Forbidden: Upgrade to Pro');
+            }
+            confirmExportBtn.disabled = false;
+            return;
+          }
+
+          if (authRes.status === 402) {
+            const errData = await authRes.json().catch(() => ({}));
+            if (window.showUpgradeModal) {
+              window.showUpgradeModal(errData.error || 'Insufficient credits.');
+            } else {
+              alert(errData.error || '402: Insufficient credits');
+            }
+            confirmExportBtn.disabled = false;
+            return;
+          }
+
+          // Subtitle Exporters (.srt & .vtt)
           if (exportType === 'srt') {
             this.exportSRT(captions, proj.title);
+            if (plan === 'pro' && window.deductCredit) {
+              window.deductCredit(1, 'SRT Export');
+            }
             if (modal) {
               modal.classList.add('hidden');
               modal.style.setProperty('display', 'none', 'important');
             }
           } else if (exportType === 'vtt') {
             this.exportVTT(captions, proj.title);
+            if (plan === 'pro' && window.deductCredit) {
+              window.deductCredit(1, 'VTT Export');
+            }
             if (modal) {
               modal.classList.add('hidden');
               modal.style.setProperty('display', 'none', 'important');
             }
           } else {
-            // Rendered Video (MP4) with burned-in captions, or Alpha channel overlay
+            // Rendered Video (MP4) with burned-in captions
             await this.exportCanvasVideo({
               exportType,
               exportRes,
@@ -281,6 +402,9 @@ class KalakarEditor {
               confirmExportBtn,
               modal
             });
+            if (plan === 'pro' && window.deductCredit) {
+              window.deductCredit(1, 'Video Export');
+            }
           }
         } catch (err) {
           console.error('[EXPORT ERROR]', err);
@@ -290,11 +414,66 @@ class KalakarEditor {
         } finally {
           confirmExportBtn.disabled = false;
           confirmExportBtn.innerHTML = `
-            <span>Download Now</span>
+            <span id="export-btn-label">Download Now</span>
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
           `;
         }
       });
+    }
+  }
+
+  initTierAndAITools() {
+    // Hook up Sidebar AI Tools locks (Emojis and Audio Enhancement)
+    const toolEmoji = document.getElementById('tool-emoji-card');
+    const toolAudio = document.getElementById('tool-audio-card');
+
+    if (toolEmoji) {
+      toolEmoji.addEventListener('click', (e) => {
+        const plan = (typeof window.getUserPlan === 'function') ? window.getUserPlan() : 'free';
+        if (plan === 'free') {
+          e.preventDefault();
+          if (window.showUpgradeModal) {
+            window.showUpgradeModal('Auto-Emojis is a Creator Pro feature! Upgrade to Pro to automatically place viral emojis.');
+          }
+        }
+      });
+    }
+
+    if (toolAudio) {
+      toolAudio.addEventListener('click', (e) => {
+        const plan = (typeof window.getUserPlan === 'function') ? window.getUserPlan() : 'free';
+        if (plan === 'free') {
+          e.preventDefault();
+          if (window.showUpgradeModal) {
+            window.showUpgradeModal('AI Audio Enhancement is a Creator Pro feature! Upgrade to Pro for studio-quality background noise removal.');
+          }
+        }
+      });
+    }
+
+    // Hook up Plan Switcher / Upgrade triggers
+    const headerPlanBadge = document.getElementById('editor-header-plan-badge');
+    if (headerPlanBadge) {
+      headerPlanBadge.addEventListener('click', () => {
+        if (window.showUpgradeModal) {
+          window.showUpgradeModal('Manage your subscription or switch between Free and Creator Pro tiers.');
+        }
+      });
+    }
+
+    const dashPlanBtn = document.getElementById('btn-toggle-plan-badge');
+    if (dashPlanBtn) {
+      dashPlanBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (window.showUpgradeModal) {
+          window.showUpgradeModal('Upgrade to Creator Pro to unlock 1080p/4K exports, AI Emojis, and Studio Audio.');
+        }
+      });
+    }
+
+    // Initialize UI on load
+    if (window.updateTierUI) {
+      window.updateTierUI();
     }
   }
 
@@ -963,7 +1142,28 @@ class KalakarEditor {
             writingScript = 'latin';
           }
 
-          // 3. Construct FormData
+          // 3. User tier and credits
+          const userPlan = (typeof window.getUserPlan === 'function') ? window.getUserPlan() : 'free';
+          const userCredits = (typeof window.getCredits === 'function') ? window.getCredits() : 0;
+          const isPro = userPlan === 'pro';
+
+          if (isPro && userCredits < 1) {
+            if (window.showUpgradeModal) {
+              window.showUpgradeModal('You have 0 credits remaining. Please recharge your credits to generate captions.');
+            } else {
+              alert('Insufficient credits. Please recharge your account.');
+            }
+            genBtn.innerHTML = originalHtml;
+            genBtn.disabled = false;
+            return;
+          }
+
+          const toggleEmoji = document.getElementById('toggle-sidebar-emojis');
+          const toggleAudio = document.getElementById('toggle-sidebar-audio');
+          const allowEmojis = isPro && (toggleEmoji ? toggleEmoji.checked : true);
+          const allowAudioEnhance = isPro && (toggleAudio ? toggleAudio.checked : true);
+
+          // 4. Construct FormData
           const formData = new FormData();
           if (mediaFile) {
             formData.append('file', mediaFile, mediaFile.name || 'video.mp4');
@@ -973,8 +1173,10 @@ class KalakarEditor {
           formData.append('filename', proj?.filename || (mediaFile ? mediaFile.name : ''));
           formData.append('language', selectedLang);
           formData.append('script', writingScript);
-          formData.append('audio_enhance', 'true');
-          formData.append('emojis', 'true');
+          formData.append('plan', userPlan);
+          formData.append('credits', String(userCredits));
+          formData.append('audio_enhance', allowAudioEnhance ? 'true' : 'false');
+          formData.append('emojis', allowEmojis ? 'true' : 'false');
 
           updateBtnStatus('Transcribing audio...');
 
@@ -1001,6 +1203,11 @@ class KalakarEditor {
               const text = await res.text();
               const clean = text.replace(/<[^>]*>?/gm, ' ').trim();
               if (clean) errMsg = clean.slice(0, 140);
+            }
+            if (res.status === 403 || res.status === 402) {
+              if (window.showUpgradeModal) {
+                window.showUpgradeModal(errMsg);
+              }
             }
             throw new Error(errMsg);
           }
@@ -1037,12 +1244,13 @@ class KalakarEditor {
                 window.showToast(`✨ ${captions.length} captions generated successfully (${data.language || selectedLang})!`);
               }
 
-              if (data.remaining_credits !== undefined) {
-                localStorage.setItem('hcg_credits', String(data.remaining_credits));
-                const credDisplay = document.getElementById('header-credits');
-                if (credDisplay) credDisplay.textContent = data.remaining_credits;
-                const sideCred = document.getElementById('sidebar-credits-display');
-                if (sideCred) sideCred.textContent = data.remaining_credits;
+              if (data.remaining_credits !== undefined && typeof window.setCredits === 'function') {
+                window.setCredits(data.remaining_credits);
+              }
+              if (isPro && data.deducted_credits) {
+                if (window.showToast) {
+                  window.showToast(`⚡ <b>1 credit</b> deducted for Caption Generation. (Remaining: <b>${data.remaining_credits}</b>)`);
+                }
               }
             }
 

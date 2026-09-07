@@ -474,9 +474,14 @@ async function startUploadAndTranscription(file, options) {
       formData.append('language', options.language || 'hi');
       formData.append('script', options.script || 'roman');
       const isHinglish = (options.language === 'hi' && options.script === 'roman') || options.language === 'hinglish';
-      formData.append('hinglish', String(isHinglish));
-      formData.append('audio_enhance', String(options.audioEnhance ?? true));
-      formData.append('emojis', String(options.emojis ?? true));
+      const plan = (typeof window.getUserPlan === 'function') ? window.getUserPlan() : (localStorage.getItem('hcg_user_plan') || 'free');
+      const credits = (typeof window.getCredits === 'function') ? window.getCredits() : parseInt(localStorage.getItem('hcg_credits') || '10', 10);
+      const isFree = plan === 'free';
+
+      formData.append('plan', plan);
+      formData.append('credits', String(credits));
+      formData.append('audio_enhance', String(isFree ? false : (options.audioEnhance ?? true)));
+      formData.append('emojis', String(isFree ? false : (options.emojis ?? true)));
       formData.append('translate', String(options.translate ?? false));
 
       const transRes = await fetch(API_BASE + '/api/transcribe', {

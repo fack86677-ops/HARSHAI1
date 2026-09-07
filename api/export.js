@@ -38,7 +38,37 @@ export default async function handler(req, res) {
     const captions = Array.isArray(body.captions) ? body.captions : (Array.isArray(body.segments) ? body.segments : []);
     const title = (body.title || body.video?.filename || 'video_captions').replace(/\.[^/.]+$/, "");
 
-    // 1. SRT Export
+    // ─── 1. TIER & PERMISSION VALIDATION ───
+    const plan = (body.plan || body.tier || req.headers['x-user-plan'] || 'free').toString().trim().toLowerCase();
+    const resolution = (body.resolution || body.res || '1080p').toString().trim().toLowerCase();
+    const userCredits = Number(body.credits !== undefined ? body.credits : 10);
+
+    // Free tier rule: Free users can only export in 720p
+    if (plan === 'free') {
+      if (resolution === '1080p' || resolution === '4k') {
+        return res.status(403).json({
+          success: false,
+          error: `403 Forbidden: ${resolution.toUpperCase()} export is reserved for Pro users. Free users can only export in 720p.`,
+          required_plan: 'pro',
+          upgrade_url: '/pricing'
+        });
+      }
+    }
+
+    // ─── 2. CREDIT DEDUCTION CHECK ───
+    // If Pro user, verify available credits
+    if (plan === 'pro' && userCredits < 1) {
+      return res.status(402).json({
+        success: false,
+        error: 'Insufficient AI credits to export. Please recharge your credits.',
+        remaining_credits: 0
+      });
+    }
+
+    // Calculate remaining credits after 1 credit deduction (only Pro users use credits)
+    const remainingCredits = plan === 'pro' ? Math.max(0, userCredits - 1) : userCredits;
+
+    // 3. SRT Export
     if (exportType === 'srt') {
       const srtText = captions.map((c, i) => {
         const start = c.startTime !== undefined ? c.startTime : (c.start || 0);
@@ -51,7 +81,7 @@ export default async function handler(req, res) {
       return res.status(200).send(srtText);
     }
 
-    // 2. VTT Export
+    // 4. VTT Export
     if (exportType === 'vtt') {
       let vttText = "WEBVTT\n\n";
       vttText += captions.map((c, i) => {
@@ -65,12 +95,16 @@ export default async function handler(req, res) {
       return res.status(200).send(vttText);
     }
 
-    // 3. MP4 / Video Export (Handled on client-side for zero-timeout GPU canvas rendering)
+    // 5. MP4 / Video Export (Handled on client-side canvas with backend authorization)
     return res.status(200).json({
       success: true,
       mode: 'client_canvas',
       format: exportType,
-      message: 'Client-side hardware accelerated video rendering active.'
+      resolution: resolution,
+      plan: plan,
+      deducted_credits: plan === 'pro' ? 1 : 0,
+      remaining_credits: remainingCredits,
+      message: 'Client-side hardware accelerated video rendering authorized.'
     });
 
   } catch (err) {

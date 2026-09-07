@@ -104,16 +104,16 @@
         <!-- Plan & Quota Card -->
         <div class="p-3.5 bg-[#0B0F1E] border border-[#1E293B] rounded-2xl space-y-2">
           <div class="flex items-center justify-between">
-            <span class="text-[11px] font-extrabold text-white uppercase tracking-wider">CREATOR PRO</span>
-            <span class="text-[9px] font-extrabold text-[#10B981] bg-[#10B981]/15 px-2 py-0.5 rounded-full border border-[#10B981]/30">ACTIVE</span>
+            <span id="dashboard-user-plan-badge" class="text-[11px] font-extrabold text-white uppercase tracking-wider">FREE PLAN</span>
+            <button onclick="window.toggleUserPlan()" id="btn-toggle-plan-badge" class="text-[9px] font-extrabold text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 hover:bg-amber-500/25 transition">SWITCH TIER</button>
           </div>
           <div class="space-y-1 text-xs text-[#94A3B8]">
             <div class="flex justify-between items-center">
               <span>AI Credits</span>
-              <span class="text-white font-extrabold"><span id="sidebar-credits-display">100</span> Left</span>
+              <span class="text-white font-extrabold"><span id="sidebar-credits-display">10</span> Left</span>
             </div>
             <div class="w-full bg-[#172033] h-1.5 rounded-full overflow-hidden mt-1">
-              <div class="bg-gradient-to-r from-[#6366F1] to-[#10B981] h-full rounded-full w-full"></div>
+              <div id="sidebar-credits-bar" class="bg-gradient-to-r from-[#6366F1] to-[#10B981] h-full rounded-full w-full"></div>
             </div>
           </div>
         </div>
@@ -418,14 +418,18 @@
           <span>⌨️</span>
         </button>
 
+        <button onclick="window.toggleUserPlan()" id="editor-header-plan-badge" class="px-2.5 py-1 text-[10px] font-black rounded-full border bg-slate-800 text-slate-300 border-slate-700 hover:border-amber-500/50 transition cursor-pointer flex items-center gap-1 shadow-sm" title="Click to toggle Free vs Pro tier">
+          <span>👑</span> <span id="editor-plan-text">FREE PLAN</span>
+        </button>
+
         <a href="/pricing" class="flex items-center gap-1.5 px-3 py-1.5 bg-[#10162A] border border-[#6366F1]/30 rounded-xl text-xs font-bold text-[#A5B4FC] hover:bg-[#172033] transition cursor-pointer" title="Creator credits balance">
           <span>⚡</span>
-          <span class="header-credits-display font-extrabold text-white">100</span> Credits
+          <span class="header-credits-display font-extrabold text-white">10</span> Credits
         </a>
 
         <!-- Big Glowing Export Button -->
         <button id="btn-open-export" class="btn-glow-primary text-xs font-extrabold px-4 py-1.5 rounded-xl shadow-lg flex items-center gap-2">
-          <span>Export 4K</span>
+          <span>Export Video</span>
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
         </button>
       </div>
@@ -467,6 +471,29 @@
             <button id="btn-editor-add-caption" class="px-2.5 py-1.5 bg-[#10162A] hover:bg-[#182242] border border-[#1E293B] hover:border-[#6366F1]/50 rounded-xl text-xs font-semibold text-[#A5B4FC] hover:text-white transition shrink-0" title="Add new caption at playhead">
               <span>+ Add</span>
             </button>
+          </div>
+
+          <!-- Sidebar AI Tools (Add Emojis & Audio Enhancement with Tier UI Locks) -->
+          <div id="sidebar-ai-tools" class="px-3 py-2 border-b border-[#1E293B] bg-[#0A0E1D]/90 flex items-center justify-between gap-2 shrink-0 text-xs">
+            <!-- Add Emojis Toggle -->
+            <div id="tool-emoji-card" class="flex-1 flex items-center justify-between p-2 rounded-xl bg-[#10162A] border border-[#1E293B] cursor-pointer hover:border-[#6366F1]/40 transition group" title="Auto-place viral emojis">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="text-sm">✨</span>
+                <span class="text-[11px] font-bold text-white truncate">Add Emojis</span>
+                <span id="badge-emoji-lock" class="text-[9px] font-black bg-amber-500/20 text-amber-400 px-1 py-0.2 rounded border border-amber-500/30 shrink-0">PRO 🔒</span>
+              </div>
+              <input type="checkbox" id="toggle-sidebar-emojis" class="w-3.5 h-3.5 accent-[#6366F1] cursor-pointer">
+            </div>
+
+            <!-- Audio Enhancement Toggle -->
+            <div id="tool-audio-card" class="flex-1 flex items-center justify-between p-2 rounded-xl bg-[#10162A] border border-[#1E293B] cursor-pointer hover:border-[#6366F1]/40 transition group" title="AI neural vocal boost & hiss removal">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="text-sm">🔊</span>
+                <span class="text-[11px] font-bold text-white truncate">Audio Enhance</span>
+                <span id="badge-audio-lock" class="text-[9px] font-black bg-amber-500/20 text-amber-400 px-1 py-0.2 rounded border border-amber-500/30 shrink-0">PRO 🔒</span>
+              </div>
+              <input type="checkbox" id="toggle-sidebar-audio" class="w-3.5 h-3.5 accent-[#6366F1] cursor-pointer">
+            </div>
           </div>
 
           <!-- Search and Tools Bar -->
@@ -908,35 +935,78 @@
         </label>
       </div>
 
-      <!-- Export Resolution Selector -->
+      <!-- Export Resolution Selector (Tier-Based UI Locks) -->
       <div class="p-3.5 bg-[#080C1B] border border-[#1E293B] rounded-2xl space-y-2">
         <div class="flex items-center justify-between text-xs font-bold text-white">
           <span>Render Quality & Resolution:</span>
-          <span class="text-[10px] text-[#10B981] font-extrabold">Ultra-Fast GPU</span>
+          <span id="export-plan-status" class="text-[10px] text-[#10B981] font-extrabold uppercase">FREE PLAN (720p)</span>
         </div>
         <div class="grid grid-cols-3 gap-2">
-          <label class="flex flex-col items-center p-2.5 rounded-xl bg-[#10162A] border border-[#6366F1]/50 cursor-pointer text-center hover:border-[#6366F1] transition">
-            <input type="radio" name="export-res" value="1080p" checked class="sr-only">
-            <span class="text-xs font-extrabold text-white">1080p FHD</span>
-            <span class="text-[10px] text-[#94A3B8]">Recommended</span>
-          </label>
-          <label class="flex flex-col items-center p-2.5 rounded-xl bg-[#10162A] border border-[#1E293B] cursor-pointer text-center hover:border-[#6366F1] transition">
-            <input type="radio" name="export-res" value="720p" class="sr-only">
+          <!-- 720p HD (Always unlocked for Free & Pro) -->
+          <label id="label-res-720p" class="flex flex-col items-center p-2.5 rounded-xl bg-[#10162A] border border-[#6366F1]/50 cursor-pointer text-center hover:border-[#6366F1] transition relative">
+            <input type="radio" name="export-res" id="radio-res-720p" value="720p" checked class="sr-only">
             <span class="text-xs font-extrabold text-white">720p HD</span>
-            <span class="text-[10px] text-[#94A3B8]">Smaller File</span>
+            <span class="text-[10px] text-[#10B981] font-bold mt-0.5">Unlocked</span>
           </label>
-          <label class="flex flex-col items-center p-2.5 rounded-xl bg-[#10162A] border border-[#1E293B] cursor-pointer text-center hover:border-[#6366F1] transition">
-            <input type="radio" name="export-res" value="4k" class="sr-only">
+
+          <!-- 1080p FHD (PRO ONLY) -->
+          <label id="label-res-1080p" class="flex flex-col items-center p-2.5 rounded-xl bg-[#10162A] border border-[#1E293B] cursor-pointer text-center hover:border-[#6366F1] transition relative">
+            <span id="badge-res-1080p" class="absolute -top-1.5 -right-1 bg-gradient-to-r from-amber-500 to-orange-500 text-black text-[9px] font-black px-1.5 py-0.2 rounded-full shadow">PRO 🔒</span>
+            <input type="radio" name="export-res" id="radio-res-1080p" value="1080p" class="sr-only">
+            <span class="text-xs font-extrabold text-white">1080p FHD</span>
+            <span class="text-[10px] text-[#94A3B8] mt-0.5">Recommended</span>
+          </label>
+
+          <!-- 4K Ultra (PRO ONLY) -->
+          <label id="label-res-4k" class="flex flex-col items-center p-2.5 rounded-xl bg-[#10162A] border border-[#1E293B] cursor-pointer text-center hover:border-[#6366F1] transition relative">
+            <span id="badge-res-4k" class="absolute -top-1.5 -right-1 bg-gradient-to-r from-amber-500 to-orange-500 text-black text-[9px] font-black px-1.5 py-0.2 rounded-full shadow">PRO 🔒</span>
+            <input type="radio" name="export-res" id="radio-res-4k" value="4k" class="sr-only">
             <span class="text-xs font-extrabold text-white">4K Ultra</span>
-            <span class="text-[10px] text-[#94A3B8]">Max Clarity</span>
+            <span class="text-[10px] text-[#94A3B8] mt-0.5">Max Clarity</span>
           </label>
         </div>
       </div>
 
-      <button id="btn-confirm-export" class="btn-glow-primary w-full py-3.5 justify-center text-sm font-extrabold rounded-2xl shadow-xl">
-        <span>Download Now</span>
+      <button id="btn-confirm-export" class="btn-glow-primary w-full py-3.5 justify-center text-sm font-extrabold rounded-2xl shadow-xl flex items-center gap-2">
+        <span id="export-btn-label">Download (720p)</span>
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
       </button>
+    </div>
+  </div>
+
+  <!-- UPGRADE TO PRO MODAL (TIER SWITCHER & PRO UNLOCK DIALOG) -->
+  <div id="modal-upgrade-pro" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-[#0B0F1E] border border-[#1E293B] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 text-center">
+      <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-[#6366F1] mx-auto flex items-center justify-center text-3xl shadow-[0_0_30px_rgba(245,158,11,0.4)]">
+        👑
+      </div>
+      <div class="space-y-1.5">
+        <h3 class="text-lg font-black text-white">Upgrade to Creator Pro</h3>
+        <p id="upgrade-modal-reason" class="text-xs text-[#94A3B8]">1080p/4K exports, AI Emojis, and Audio Enhancement are exclusive to Pro members.</p>
+      </div>
+      <div class="p-4 bg-[#10162A] border border-[#1E293B] rounded-2xl text-left space-y-2 text-xs">
+        <div class="text-[10px] font-bold text-amber-400 uppercase tracking-wider">CREATOR PRO INCLUDES:</div>
+        <div class="flex items-center gap-2 text-slate-200">
+          <span class="text-[#10B981] font-bold">✓</span> <span>1080p FHD & 4K Ultra video exports</span>
+        </div>
+        <div class="flex items-center gap-2 text-slate-200">
+          <span class="text-[#10B981] font-bold">✓</span> <span>AI Viral Emojis & Word Animations</span>
+        </div>
+        <div class="flex items-center gap-2 text-slate-200">
+          <span class="text-[#10B981] font-bold">✓</span> <span>Neural Vocal Clarity & Studio Noise Cleaner</span>
+        </div>
+        <div class="flex items-center gap-2 text-slate-200">
+          <span class="text-[#10B981] font-bold">✓</span> <span>100 AI Video Rendering Credits</span>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button id="btn-simulate-toggle-pro" onclick="window.setUserPlan('pro')" class="flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-extrabold text-xs rounded-xl shadow-lg transition">
+          Switch to Pro (Unlock All)
+        </button>
+        <button id="btn-close-upgrade-modal" onclick="document.getElementById('modal-upgrade-pro').classList.add('hidden')" class="px-4 py-3 bg-[#10162A] hover:bg-[#182242] border border-[#1E293B] text-slate-300 font-bold text-xs rounded-xl transition">
+          Close
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1014,12 +1084,12 @@
   </div>
 
   <!-- Scripts -->
-  <script src="/static/js/config.js?v=2.7"></script>
-  <script src="/static/js/templates.js?v=2.7"></script>
-  <script src="/static/js/player.js?v=2.7"></script>
-  <script src="/static/js/timeline.js?v=2.7"></script>
-  <script src="/static/js/editor.js?v=2.7"></script>
-  <script src="/static/js/app.js?v=2.7"></script>
+  <script src="/static/js/config.js?v=2.8"></script>
+  <script src="/static/js/templates.js?v=2.8"></script>
+  <script src="/static/js/player.js?v=2.8"></script>
+  <script src="/static/js/timeline.js?v=2.8"></script>
+  <script src="/static/js/editor.js?v=2.8"></script>
+  <script src="/static/js/app.js?v=2.8"></script>
 
   <!-- Credit & User System -->
   <script>
@@ -1048,20 +1118,160 @@
       }
     };
 
-    window.getCredits = function() { return parseInt(localStorage.getItem('hcg_credits') || '0'); };
+    // ─── USER TIER & CREDIT STATE ───
+    window.currentUser = {
+      plan: localStorage.getItem('hcg_user_plan') || 'free',
+      credits: parseInt(localStorage.getItem('hcg_credits') || '10', 10),
+      name: localStorage.getItem('hcg_username') || 'Harsh'
+    };
+
+    window.getUserPlan = function() {
+      return localStorage.getItem('hcg_user_plan') || 'free';
+    };
+
+    window.setUserPlan = function(plan) {
+      localStorage.setItem('hcg_user_plan', plan);
+      window.currentUser.plan = plan;
+      window.updateTierUI();
+      const modal = document.getElementById('modal-upgrade-pro');
+      if (modal) modal.classList.add('hidden');
+      if (window.showToast) {
+        window.showToast(plan === 'pro' ? '👑 Switched to Creator Pro plan! (All features unlocked)' : 'Switched to Free plan (720p export active).');
+      }
+    };
+
+    window.toggleUserPlan = function() {
+      const current = window.getUserPlan();
+      window.setUserPlan(current === 'free' ? 'pro' : 'free');
+    };
+
+    window.showUpgradeModal = function(reason) {
+      const modal = document.getElementById('modal-upgrade-pro');
+      const reasonEl = document.getElementById('upgrade-modal-reason');
+      if (reasonEl && reason) reasonEl.textContent = reason;
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+      }
+    };
+
+    window.updateTierUI = function() {
+      const plan = window.getUserPlan();
+      const isFree = plan === 'free';
+      window.currentUser.plan = plan;
+      window.currentUser.credits = window.getCredits();
+
+      // 1. Dashboard Plan Card
+      const dashBadge = document.getElementById('dashboard-user-plan-badge');
+      if (dashBadge) {
+        dashBadge.textContent = isFree ? 'FREE PLAN' : 'CREATOR PRO';
+        dashBadge.className = isFree 
+          ? 'text-[11px] font-extrabold text-slate-300 uppercase tracking-wider' 
+          : 'text-[11px] font-extrabold text-emerald-400 uppercase tracking-wider';
+      }
+      const dashBtn = document.getElementById('btn-toggle-plan-badge');
+      if (dashBtn) {
+        dashBtn.textContent = isFree ? 'UPGRADE PRO' : 'PRO ACTIVE';
+        dashBtn.className = isFree
+          ? 'text-[9px] font-extrabold text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 hover:bg-amber-500/25 transition cursor-pointer'
+          : 'text-[9px] font-extrabold text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/30 hover:bg-emerald-500/25 transition cursor-pointer';
+      }
+
+      // 2. Editor Header Badge
+      const headerPlanText = document.getElementById('editor-plan-text');
+      if (headerPlanText) {
+        headerPlanText.textContent = isFree ? 'FREE PLAN' : 'CREATOR PRO';
+      }
+      const headerBadge = document.getElementById('editor-header-plan-badge');
+      if (headerBadge) {
+        headerBadge.className = isFree
+          ? 'px-2.5 py-1 text-[10px] font-black rounded-full border bg-slate-800 text-slate-300 border-slate-700 hover:border-amber-500/50 transition cursor-pointer flex items-center gap-1 shadow-sm'
+          : 'px-2.5 py-1 text-[10px] font-black rounded-full border bg-emerald-950/60 text-emerald-400 border-emerald-500/50 hover:border-emerald-400 transition cursor-pointer flex items-center gap-1 shadow-sm';
+      }
+
+      // 3. Export Modal Status & Locks
+      const exportStatus = document.getElementById('export-plan-status');
+      if (exportStatus) {
+        exportStatus.textContent = isFree ? 'FREE PLAN (720p)' : 'CREATOR PRO (4K UNLOCKED)';
+        exportStatus.className = isFree ? 'text-[10px] text-amber-400 font-extrabold uppercase' : 'text-[10px] text-[#10B981] font-extrabold uppercase';
+      }
+
+      const badge1080 = document.getElementById('badge-res-1080p');
+      const badge4k = document.getElementById('badge-res-4k');
+      const label1080 = document.getElementById('label-res-1080p');
+      const label4k = document.getElementById('label-res-4k');
+      const radio720 = document.getElementById('radio-res-720p');
+      const radio1080 = document.getElementById('radio-res-1080p');
+      const exportBtnLabel = document.getElementById('export-btn-label');
+
+      if (isFree) {
+        if (badge1080) badge1080.classList.remove('hidden');
+        if (badge4k) badge4k.classList.remove('hidden');
+        if (label1080) label1080.classList.add('opacity-60');
+        if (label4k) label4k.classList.add('opacity-60');
+        if (radio720) radio720.checked = true;
+        if (exportBtnLabel) exportBtnLabel.textContent = 'Download (720p HD)';
+      } else {
+        if (badge1080) badge1080.classList.add('hidden');
+        if (badge4k) badge4k.classList.add('hidden');
+        if (label1080) label1080.classList.remove('opacity-60');
+        if (label4k) label4k.classList.remove('opacity-60');
+        if (radio1080) radio1080.checked = true;
+        if (exportBtnLabel) exportBtnLabel.textContent = 'Download (1080p FHD)';
+      }
+
+      // 4. Sidebar AI Tools Locks
+      const badgeEmoji = document.getElementById('badge-emoji-lock');
+      const badgeAudio = document.getElementById('badge-audio-lock');
+      const toolEmoji = document.getElementById('tool-emoji-card');
+      const toolAudio = document.getElementById('tool-audio-card');
+      const toggleEmoji = document.getElementById('toggle-sidebar-emojis');
+      const toggleAudio = document.getElementById('toggle-sidebar-audio');
+
+      if (isFree) {
+        if (badgeEmoji) badgeEmoji.classList.remove('hidden');
+        if (badgeAudio) badgeAudio.classList.remove('hidden');
+        if (toolEmoji) toolEmoji.classList.add('opacity-75');
+        if (toolAudio) toolAudio.classList.add('opacity-75');
+        if (toggleEmoji) { toggleEmoji.checked = false; toggleEmoji.disabled = true; }
+        if (toggleAudio) { toggleAudio.checked = false; toggleAudio.disabled = true; }
+      } else {
+        if (badgeEmoji) badgeEmoji.classList.add('hidden');
+        if (badgeAudio) badgeAudio.classList.add('hidden');
+        if (toolEmoji) toolEmoji.classList.remove('opacity-75');
+        if (toolAudio) toolAudio.classList.remove('opacity-75');
+        if (toggleEmoji) { toggleEmoji.disabled = false; toggleEmoji.checked = true; }
+        if (toggleAudio) { toggleAudio.disabled = false; toggleAudio.checked = true; }
+      }
+    };
+
+    window.getCredits = function() { return parseInt(localStorage.getItem('hcg_credits') || '10', 10); };
     window.setCredits = function(n) {
       const val = Math.max(0, n);
       localStorage.setItem('hcg_credits', String(val));
+      window.currentUser.credits = val;
       const formatted = val.toLocaleString('en-IN');
-      document.querySelectorAll('#header-credits, .header-credits-display').forEach(el => {
+      document.querySelectorAll('#header-credits, .header-credits-display, #sidebar-credits-display').forEach(el => {
         el.textContent = formatted;
       });
+    };
+
+    window.deductCredit = function(amount = 1, reason = 'Action') {
+      const current = window.getCredits();
+      if (current < amount) return false;
+      const updated = current - amount;
+      window.setCredits(updated);
+      if (window.showToast) {
+        window.showToast(`⚡ <b>${amount} credit</b> deducted for ${reason}. (Remaining: <b>${updated}</b>)`);
+      }
+      return true;
     };
 
     (function initCreditsAndProfile() {
       const isNew = !localStorage.getItem('hcg_credits_init');
       if (isNew) {
-        localStorage.setItem('hcg_credits', '100');
+        localStorage.setItem('hcg_credits', '10');
+        localStorage.setItem('hcg_user_plan', 'free');
         localStorage.setItem('hcg_credits_init', 'true');
       }
       window.setCredits(window.getCredits());
@@ -1070,25 +1280,9 @@
       const initials = user.charAt(0).toUpperCase();
       document.querySelectorAll('#avatar-initials, .avatar-initials-display').forEach(el => el.textContent = initials);
       document.querySelectorAll('#avatar-name, .avatar-name-display').forEach(el => el.textContent = user.charAt(0).toUpperCase() + user.slice(1));
+      
+      window.updateTierUI();
     })();
-
-    window.HCG = window.HCG || {};
-    window.HCG.calculateCredits = function(durationSeconds) {
-      return 10;
-    };
-
-    window.HCG.deductCredits = function(durationSeconds) {
-      const cost = window.HCG.calculateCredits(durationSeconds);
-      const current = window.getCredits();
-      if (current < cost) {
-        const go = confirm(`⚠️ Aapke paas sirf ${current} credits hain, lekin is video ke liye ~${cost} credits chahiye.\n\nAbhi credits buy karein?`);
-        if (go) window.location.href = '/pricing';
-        return false;
-      }
-      window.setCredits(current - cost);
-      window.showToast(`✨ <b>${cost} credits</b> use kiye! Baaki: <b>${window.getCredits()} credits</b>`);
-      return true;
-    };
   </script>
 </body>
 </html>
