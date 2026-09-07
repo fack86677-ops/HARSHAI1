@@ -38,11 +38,36 @@ async function initApp() {
   const shouldOpenEditor = window.location.pathname === '/editor' || urlParams.get('editor') === '1' || window.location.hash === '#editor';
   if (shouldOpenEditor) {
     try {
-      const res = await fetch(API_BASE + '/api/projects');
-      const data = await res.json();
-      if (data.projects && data.projects.length > 0) {
-        openStudioEditor(data.projects[0]);
-      } else {
+      let opened = false;
+      try {
+        const res = await fetch(API_BASE + '/api/projects');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.projects && data.projects.length > 0) {
+            openStudioEditor(data.projects[0]);
+            opened = true;
+          }
+        }
+      } catch(_) {}
+
+      if (!opened) {
+        // Check localStorage projects
+        try {
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('harsh_project_')) {
+              const item = JSON.parse(localStorage.getItem(key));
+              if (item) {
+                openStudioEditor(item);
+                opened = true;
+                break;
+              }
+            }
+          }
+        } catch(_) {}
+      }
+
+      if (!opened) {
         openDefaultDemoEditor();
       }
     } catch(e) {
@@ -626,9 +651,27 @@ async function loadRecentProjects() {
   if (!container) return;
 
   try {
-    const res = await fetch(API_BASE + '/api/projects');
-    const data = await res.json();
-    const projects = data.projects || [];
+    let projects = [];
+    try {
+      const res = await fetch(API_BASE + '/api/projects');
+      if (res.ok) {
+        const data = await res.json();
+        projects = data.projects || [];
+      }
+    } catch (_) {}
+
+    // Also include projects from localStorage
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('harsh_project_')) {
+          const item = JSON.parse(localStorage.getItem(key));
+          if (item && !projects.some(p => p.id === item.id)) {
+            projects.unshift(item);
+          }
+        }
+      }
+    } catch (_) {}
 
     container.innerHTML = '';
     projects.forEach(proj => {
