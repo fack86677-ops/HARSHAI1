@@ -206,15 +206,9 @@
     © 2026 Harsh AI Studio • Ultra-Premium AI Video & Caption Suite
   </footer>
 
+  <script src="/static/js/config.js"></script>
   <script>
-    function getApiBase() {
-      if (window.location.origin && window.location.origin.includes(':7860')) return '';
-      if (window.location.protocol === 'file:' || window.location.port === '5500' || window.location.port === '3000' || window.location.port === '8080' || window.location.port === '5173') {
-        return 'http://localhost:7860';
-      }
-      return '';
-    }
-    const API_BASE = getApiBase();
+    const API_BASE = (typeof window.getApiBase === 'function') ? window.getApiBase() : '';
     let currentUser = null;
 
     async function loadDashboard() {

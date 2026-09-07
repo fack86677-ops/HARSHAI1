@@ -925,14 +925,7 @@
   </div>
 
   <!-- Scripts -->
-  <script>
-    window.getApiBase = function() {
-      if (window.location.origin && window.location.origin.includes(':7860')) return '';
-      const host = window.location.hostname || '127.0.0.1';
-      return `http://${host}:7860`;
-    };
-    window.API_BASE = window.getApiBase();
-  </script>
+  <script src="/static/js/config.js"></script>
   <script src="/static/js/templates.js"></script>
   <script src="/static/js/player.js"></script>
   <script src="/static/js/timeline.js"></script>

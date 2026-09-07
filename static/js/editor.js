@@ -316,9 +316,12 @@ class KalakarEditor {
             }))
           };
 
-          const apiBase = (typeof window.getApiBase === 'function') 
+          let apiBase = (typeof window.getApiBase === 'function') 
             ? window.getApiBase() 
             : (window.API_BASE || '');
+          if (window.location.protocol === 'https:' && apiBase.startsWith('http://')) {
+            apiBase = apiBase.replace(/^http:\/\//i, 'https://');
+          }
           const endpointUrl = `${apiBase}/api/export`;
 
           const res = await fetch(endpointUrl, {
@@ -735,7 +738,10 @@ class KalakarEditor {
 
           updateBtnStatus('Transcribing audio...');
 
-          const apiBase = (typeof window.getApiBase === 'function') ? window.getApiBase() : (window.API_BASE || '');
+          let apiBase = (typeof window.getApiBase === 'function') ? window.getApiBase() : (window.API_BASE || '');
+          if (window.location.protocol === 'https:' && apiBase.startsWith('http://')) {
+            apiBase = apiBase.replace(/^http:\/\//i, 'https://');
+          }
           const res = await fetch(`${apiBase}/api/transcribe`, {
             method: 'POST',
             body: formData

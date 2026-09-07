@@ -1,12 +1,16 @@
 // Main Application Controller for Harsh Caption Generator Studio
 
 function getApiBase() {
+  if (typeof window.getApiBase === 'function' && window.getApiBase !== getApiBase) {
+    return window.getApiBase();
+  }
+  if (window.location.protocol === 'https:') return '';
   if (window.location.origin && window.location.origin.includes(':7860')) return '';
   const host = window.location.hostname || '127.0.0.1';
   return `http://${host}:7860`;
 }
-window.getApiBase = getApiBase;
-window.API_BASE = getApiBase();
+if (!window.getApiBase) window.getApiBase = getApiBase;
+window.API_BASE = (typeof window.getApiBase === 'function') ? window.getApiBase() : getApiBase();
 const API_BASE = window.API_BASE;
 
 let currentProject = null;
