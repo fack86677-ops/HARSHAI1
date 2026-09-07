@@ -295,45 +295,90 @@
 
   <!-- ── Instant UPI Payment Modal ── -->
   <div id="modal-checkout" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-xl flex items-center justify-center p-4 hidden">
-    <div class="bg-[#0B0F1E] border border-[#1E293B] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-6">
-      <div class="flex items-center justify-between">
+    <div class="bg-[#0B0F1E] border border-[#1E293B] rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl space-y-5 text-white font-sans">
+      <div class="flex items-center justify-between border-b border-[#1E293B] pb-3">
         <div>
           <div class="text-[10px] font-black uppercase text-[#818CF8] tracking-wider">INSTANT UPI CHECKOUT</div>
-          <h3 class="text-base font-black text-white" id="modal-plan-title">Recharge AI Credits</h3>
+          <h3 class="text-base font-black text-white" id="modal-plan-title">Upgrade to Creator Pro</h3>
         </div>
-        <button onclick="closeCheckoutModal()" class="p-1.5 rounded-lg text-[#64748B] hover:text-white">
+        <button onclick="closeCheckoutModal()" class="p-1.5 rounded-lg text-[#64748B] hover:text-white transition">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
 
       <!-- Plan Summary Pill -->
-      <div class="p-4 rounded-2xl bg-[#10162A] border border-[#1E293B] flex items-center justify-between">
+      <div class="p-3.5 rounded-2xl bg-[#10162A] border border-[#1E293B] flex items-center justify-between">
         <div>
           <div class="text-xs font-bold text-white" id="modal-credits-display">2,500 Credits</div>
-          <div class="text-[10px] text-[#94A3B8]">Lifetime validity • Instant activation</div>
+          <div class="text-[10px] text-[#94A3B8]">Lifetime validity • 1080p/4K Unlocked</div>
         </div>
         <div class="text-right">
-          <div class="text-lg font-black text-[#10B981]" id="modal-amount-display">₹699</div>
+          <div class="text-xl font-black text-[#10B981]" id="modal-amount-display">₹699</div>
           <div class="text-[9px] text-[#64748B]">All taxes included</div>
         </div>
       </div>
 
-      <!-- QR Code Simulation -->
-      <div class="text-center p-5 rounded-2xl bg-[#06080F] border border-[#1E293B] space-y-3">
-        <div class="w-36 h-36 mx-auto bg-white p-2 rounded-xl flex items-center justify-center shadow-lg">
-          <!-- Stylized QR placeholder -->
-          <svg class="w-full h-full text-black" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14 0h4v4h-4v-4zm-4-2h2v2h-2v-2zm4 4h2v2h-2v-2zm-2 2h2v2h-2v-2zm0-4h2v2h-2v-2zm-4 2h2v2h-2v-2zm4-4h2v2h-2v-2z"/>
-          </svg>
+      <!-- 1. Real UPI QR Code Display -->
+      <div class="text-center p-5 rounded-3xl bg-[#080C1B] border border-[#1E293B] space-y-3.5 shadow-inner">
+        <div class="inline-block p-2.5 bg-white rounded-2xl shadow-xl">
+          <img
+            src="/my-qr.jpeg"
+            alt="UPI QR Code"
+            class="w-52 h-52 sm:w-56 sm:h-56 object-contain rounded-xl mx-auto"
+            onerror="if(!this.src.includes('/static/my-qr.jpeg')) this.src='/static/my-qr.jpeg';"
+          />
         </div>
-        <div class="text-[11px] text-[#94A3B8] font-bold">
-          Scan with GPay / PhonePe / Paytm / BHIM UPI
+
+        <!-- 2. UPI Instructions -->
+        <p class="text-xs font-semibold text-slate-300 leading-relaxed px-2">
+          Scan this QR code with any UPI App (PhonePe, GPay, Paytm) to upgrade to Pro.
+        </p>
+
+        <!-- Supported UPI Apps Badges -->
+        <div class="flex items-center justify-center gap-2 pt-1">
+          <span class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-purple-300">PhonePe</span>
+          <span class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-blue-300">GPay</span>
+          <span class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-cyan-300">Paytm</span>
+          <span class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-emerald-300">BHIM UPI</span>
         </div>
       </div>
 
-      <button onclick="confirmPurchase()" id="btn-confirm-pay" class="w-full py-3.5 rounded-xl btn-glow text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-xl">
-        <span>⚡ Simulate Instant Payment Confirmation</span>
-      </button>
+      <!-- 3. Transaction ID Input & 4. Submit Payment Button -->
+      <form onsubmit="submitManualPayment(event)" class="space-y-4">
+        <div class="space-y-1.5 text-left">
+          <label for="input-utr-number" class="text-[11px] font-extrabold uppercase tracking-wider text-slate-300 flex items-center justify-between">
+            <span>12-digit UTR / Transaction ID</span>
+            <span class="text-[10px] text-amber-400 font-bold lowercase">required</span>
+          </label>
+          <div class="relative">
+            <input
+              id="input-utr-number"
+              type="text"
+              maxlength="12"
+              oninput="handleUtrInput(this)"
+              placeholder="e.g. 423589102456 (12 digits)"
+              class="w-full px-4 py-3 rounded-2xl bg-[#10162A] border border-[#1E293B] focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20 text-white placeholder-slate-500 font-mono text-xs tracking-wider outline-none transition"
+              required
+            />
+            <div id="utr-counter" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-mono text-slate-500 font-bold">
+              0/12
+            </div>
+          </div>
+          <p id="utr-error-msg" class="text-[11px] text-rose-400 font-semibold hidden"></p>
+          <p class="text-[10px] text-slate-500">
+            Check your payment receipt in PhonePe/GPay/Paytm for the 12-digit UTR number.
+          </p>
+        </div>
+
+        <button
+          type="submit"
+          id="btn-submit-payment"
+          class="w-full py-3.5 rounded-2xl btn-glow text-white font-black text-xs tracking-wide uppercase flex items-center justify-center gap-2 shadow-xl cursor-pointer disabled:opacity-50"
+        >
+          <span>Submit Payment</span>
+          <span>→</span>
+        </button>
+      </form>
     </div>
   </div>
 
@@ -383,23 +428,62 @@
       setTimeout(() => { toast.classList.add('hidden'); }, 3500);
     }
 
-    async function confirmPurchase() {
-      const btn = document.getElementById('btn-confirm-pay');
-      btn.disabled = true;
-      btn.innerHTML = `<span>Processing Payment... ⏳</span>`;
+    function handleUtrInput(input) {
+      input.value = input.value.replace(/\D/g, '');
+      const counter = document.getElementById('utr-counter');
+      if (counter) counter.textContent = `${input.value.length}/12`;
+      const err = document.getElementById('utr-error-msg');
+      if (err) err.classList.add('hidden');
+    }
+
+    async function submitManualPayment(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('input-utr-number');
+      const err = document.getElementById('utr-error-msg');
+      const utr = (input?.value || '').trim();
+
+      if (!utr || utr.length !== 12) {
+        if (err) {
+          err.textContent = 'Please enter a valid 12-digit numeric UTR / Transaction ID.';
+          err.classList.remove('hidden');
+        } else {
+          alert('Please enter a valid 12-digit numeric UTR / Transaction ID.');
+        }
+        return;
+      }
+
+      const btn = document.getElementById('btn-submit-payment');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="animate-spin h-4 w-4 text-white inline mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg><span>Verifying UTR...</span>`;
+      }
+
+      // Record pending payment in localStorage
+      const paymentRecord = {
+        utr: utr,
+        plan: selectedPlanName,
+        amount: selectedAmount,
+        credits: selectedCredits,
+        status: 'pending_verification',
+        timestamp: new Date().toISOString()
+      };
+      const history = JSON.parse(localStorage.getItem('hcg_pending_payments') || '[]');
+      history.push(paymentRecord);
+      localStorage.setItem('hcg_pending_payments', JSON.stringify(history));
 
       setTimeout(() => {
-        const curr = parseInt(localStorage.getItem('hcg_credits') || '100');
-        const updated = curr + selectedCredits;
-        localStorage.setItem('hcg_credits', String(updated));
-
-        updateNavCredits();
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<span>Submit Payment</span><span>→</span>`;
+        }
         closeCheckoutModal();
-        btn.disabled = false;
-        btn.innerHTML = `<span>⚡ Simulate Instant Payment Confirmation</span>`;
+        if (input) input.value = '';
+        const counter = document.getElementById('utr-counter');
+        if (counter) counter.textContent = '0/12';
 
-        showToast(`🎉 Payment Confirmed! <b>+${selectedCredits} Credits</b> added! Total: <b>${updated}</b>`);
-      }, 1200);
+        // Exact success toast required:
+        showToast('Payment details submitted! Your account will be upgraded shortly after verification.');
+      }, 900);
     }
 
     updateNavCredits();
