@@ -1,50 +1,57 @@
 {
   "version": 2,
-  "cleanUrls": true,
-  "rewrites": [
+  "routes": [
     {
-      "source": "/",
-      "destination": "/static/login.html"
+      "src": "^/api/(.*)",
+      "dest": "/api/"
     },
     {
-      "source": "/dashboard",
-      "destination": "/static/dashboard.html"
+      "src": "^/$",
+      "dest": "/static/login.html"
     },
     {
-      "source": "/dashboard.html",
-      "destination": "/static/dashboard.html"
+      "src": "^/login$",
+      "dest": "/static/login.html"
     },
     {
-      "source": "/admin",
-      "destination": "/static/admin.html"
+      "src": "^/login.html$",
+      "dest": "/static/login.html"
     },
     {
-      "source": "/admin.html",
-      "destination": "/static/admin.html"
+      "src": "^/editor$",
+      "dest": "/static/index.html"
     },
     {
-      "source": "/editor",
-      "destination": "/static/index.html"
+      "src": "^/index.html$",
+      "dest": "/static/index.html"
     },
     {
-      "source": "/index.html",
-      "destination": "/static/index.html"
+      "src": "^/dashboard$",
+      "dest": "/static/dashboard.html"
     },
     {
-      "source": "/pricing",
-      "destination": "/static/pricing.html"
+      "src": "^/dashboard.html$",
+      "dest": "/static/dashboard.html"
     },
     {
-      "source": "/pricing.html",
-      "destination": "/static/pricing.html"
+      "src": "^/admin$",
+      "dest": "/static/admin.html"
     },
     {
-      "source": "/login",
-      "destination": "/static/login.html"
+      "src": "^/admin.html$",
+      "dest": "/static/admin.html"
     },
     {
-      "source": "/login.html",
-      "destination": "/static/login.html"
+      "src": "^/pricing$",
+      "dest": "/static/pricing.html"
+    },
+    {
+      "src": "^/pricing.html$",
+      "dest": "/static/pricing.html"
+    },
+    {
+      "src": "^/static/(.*)",
+      "dest": "/static/"
     }
   ]
 }
