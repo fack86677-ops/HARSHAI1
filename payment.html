@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pricing & Plans – Harsh AI Studio</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236366F1'><path d='M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5'/></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'] },
+          colors: {
+            brand: {
+              primary: '#6366F1',
+              primaryHover: '#4F46E5',
+              cyan: '#06B6D4',
+              pink: '#EC4899',
+              green: '#10B981',
+              dark: '#030712',
+              card: '#080C1B',
+              surface: '#0E1428',
+              border: '#1E293B'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="/static/css/styles.css">
+  <style>
+    body {
+      background-color: #030712;
+      color: #F8FAFC;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .ambient-aurora {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse at 20% 10%, rgba(99, 102, 241, 0.16) 0%, transparent 45%),
+        radial-gradient(ellipse at 80% 25%, rgba(236, 72, 153, 0.12) 0%, transparent 45%),
+        radial-gradient(ellipse at 50% 90%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
+    }
+    .grid-pattern {
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 36px 36px;
+    }
+    .glass-card {
+      background: rgba(11, 16, 33, 0.75);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+    .btn-glow {
+      background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%);
+      box-shadow: 0 0 30px rgba(99, 102, 241, 0.45);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-glow:hover {
+      box-shadow: 0 0 45px rgba(99, 102, 241, 0.75), 0 0 20px rgba(236, 72, 153, 0.45);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col grid-pattern selection:bg-[#6366F1] selection:text-white relative">
+  <div class="ambient-aurora"></div>
+
+  <!-- ── Top Navbar ── -->
+  <header class="sticky top-0 z-50 bg-[#030712]/85 backdrop-blur-2xl border-b border-[#1E293B] px-6 lg:px-14 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-8">
+      <a href="/dashboard" class="flex items-center gap-3 text-decoration-none group">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#6366F1] via-[#8B5CF6] to-[#EC4899] flex items-center justify-center text-white font-black text-xl shadow-[0_0_25px_rgba(99,102,241,0.6)] group-hover:scale-105 transition">
+          ⚡
+        </div>
+        <span class="text-xl font-black text-white tracking-tight flex items-center">
+          Harsh AI<span class="w-2 h-2 rounded-full bg-[#06B6D4] ml-1.5 shadow-[0_0_10px_#06B6D4]"></span>
+        </span>
+      </a>
+
+      <nav class="hidden md:flex items-center gap-6 text-sm font-semibold text-[#94A3B8]">
+        <a href="/dashboard" class="hover:text-white transition">Dashboard</a>
+        <a href="/editor" class="hover:text-white transition">Studio Editor</a>
+        <a href="/pricing" class="text-white font-bold">Pricing & Plans</a>
+      </nav>
+    </div>
+
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#10162A] border border-[#6366F1]/40 text-xs font-bold text-[#A5B4FC]">
+        <span>⚡</span>
+        <span id="nav-credit-count" class="text-white font-black">100</span>
+        <span class="hidden sm:inline">Credits</span>
+      </div>
+      <a href="/editor" class="px-5 py-2 rounded-full text-xs font-black text-white btn-glow hidden sm:flex items-center gap-1.5">
+        <span>Launch Studio →</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- ── Main Pricing Content ── -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-6 lg:px-12 py-12 lg:py-16 relative z-10 space-y-12">
+    
+    <!-- Hero Header -->
+    <div class="text-center max-w-3xl mx-auto space-y-4">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#6366F1]/15 border border-[#6366F1]/35 text-[#A5B4FC] text-xs font-extrabold tracking-wide uppercase">
+        <span>💎 100% TRANSPARENT CREATOR PRICING</span>
+      </div>
+
+      <h1 class="text-4xl sm:text-5xl font-black text-white tracking-tight">
+        Scale Your Content with <br/>
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#38BDF8] via-[#818CF8] to-[#EC4899]">
+          Lifetime AI Credits
+        </span>
+      </h1>
+
+      <p class="text-sm sm:text-base text-[#94A3B8] max-w-xl mx-auto">
+        Pay only for the videos you transcribe. No monthly subscriptions, no expiry dates, and zero hidden charges.
+      </p>
+    </div>
+
+    <!-- Free Bonus Gift Bar -->
+    <div class="max-w-2xl mx-auto p-4 rounded-2xl bg-gradient-to-r from-[#6366F1]/20 via-[#A855F7]/15 to-[#EC4899]/20 border border-[#6366F1]/40 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-[#6366F1]/30 text-[#A5B4FC] flex items-center justify-center text-xl font-bold shrink-0">
+          🎁
+        </div>
+        <div>
+          <div class="text-xs font-black text-white">Welcome Gift: 100 Free Credits Active</div>
+          <div class="text-[11px] text-[#94A3B8]">Automatically loaded onto every newly registered creator account.</div>
+        </div>
+      </div>
+      <span class="px-3 py-1 rounded-full text-[11px] font-black bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/40 shrink-0">
+        CLAIMED & ACTIVE
+      </span>
+    </div>
+
+    <!-- ── Pricing Cards Grid ── -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch pt-4">
+      
+      <!-- Plan 1: Starter Pack -->
+      <div class="glass-card rounded-3xl p-7 flex flex-col justify-between hover:border-[#6366F1]/50 transition duration-300">
+        <div>
+          <div class="w-10 h-10 rounded-xl bg-[#6366F1]/15 text-[#818CF8] flex items-center justify-center text-xl font-bold mb-4">🌱</div>
+          <div class="text-xs font-black uppercase text-[#818CF8] tracking-wider mb-1">CREATOR STARTER</div>
+          <div class="flex items-baseline gap-1 my-3">
+            <span class="text-xl font-bold text-[#818CF8]">₹</span>
+            <span class="text-4xl font-black text-white">299</span>
+            <span class="text-xs text-[#64748B] font-semibold ml-1">one-time</span>
+          </div>
+          <div class="p-3 rounded-xl bg-[#10162A] border border-[#1E293B] text-xs font-bold text-[#A5B4FC] mb-6">
+            ⚡ <strong>500 AI Credits</strong> (~50 Viral Reels)
+          </div>
+
+          <button onclick="buyCredits(500, 299, 'Creator Starter')" class="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-white font-black text-xs transition mb-6">
+            Buy Starter Pack
+          </button>
+
+          <div class="space-y-3 text-xs text-[#D1D5DB]">
+            <div class="flex items-center gap-2.5"><span class="text-[#10B981] font-bold">✓</span> 500 AI Speech Credits</div>
+            <div class="flex items-center gap-2.5"><span class="text-[#10B981] font-bold">✓</span> Faster-Whisper Neural STT</div>
+            <div class="flex items-center gap-2.5"><span class="text-[#10B981] font-bold">✓</span> Roman Hinglish Transliteration</div>
+            <div class="flex items-center gap-2.5"><span class="text-[#10B981] font-bold">✓</span> 1080p Full HD MP4 Export</div>
+            <div class="flex items-center gap-2.5"><span class="text-[#10B981] font-bold">✓</span> 22+ Viral Reel Presets</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Plan 2: Creator Pro (MOST POPULAR) -->
+      <div class="glass-card rounded-3xl p-7 flex flex-col justify-between border-2 border-[#6366F1] shadow-[0_0_50px_rgba(99,102,241,0.25)] relative transform md:-translate-y-2">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-white bg-gradient-to-r from-[#6366F1] to-[#EC4899] shadow-lg">
+          🔥 MOST POPULAR FOR REELS
+        </div>
+
+        <div>
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#6366F1] to-[#EC4899] text-white flex items-center justify-center text-xl font-bold mb-4 shadow-lg">⚡</div>
+          <div class="text-xs font-black uppercase text-[#EC4899] tracking-wider mb-1">CREATOR PRO</div>
+          <div class="flex items-baseline gap-1 my-3">
+            <span class="text-xl font-bold text-[#EC4899]">₹</span>
+            <span class="text-5xl font-black text-white">699</span>
+            <span class="text-xs text-[#64748B] font-semibold ml-1">one-time</span>
+          </div>
+          <div class="p-3 rounded-xl bg-[#10162A] border border-[#6366F1]/50 text-xs font-bold text-[#F472B6] mb-6">
+            ⚡ <strong>2,500 AI Credits</strong> (~250 Viral Reels)
+          </div>
+
+          <button onclick="buyCredits(2500, 699, 'Creator Pro')" class="w-full py-3.5 rounded-xl btn-glow text-white font-black text-xs flex items-center justify-center gap-2 shadow-xl mb-6">
+            <span>Get Creator Pro Pack 🚀</span>
+          </button>
+
+          <div class="space-y-3 text-xs text-[#D1D5DB]">
+            <div class="flex items-center gap-2.5"><span class="text-[#10B981] font-bold">✓</span> <strong>2,500 AI Credits</strong> (Best Value)</div>
+            <div class="flex items-center gap-2.5"><span class="text-[#10B981] font-bold">✓</span> Priority Neural GPU Processing</div>
+            <div class="flex items-center gap-2.5"><span class="text-[#10B981] font-bold">✓</span> <strong>4K 60FPS Ultra Quality Export</strong></div>
+            <div class="flex items-center gap-2.5"><span class="text-[#10B981] font-bold">✓</span> Custom Font Studio (.TTF/.OTF)</div>
+            <div class="flex items-center gap-2.5"><span class="text-[#10B981] font-bold">✓</span> Pro Alpha Transparent NLE Export</div>
+            <div class="flex items-center gap-2.5"><span class="text-[#10B981] font-bold">✓</span> Credits Never Expire</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Plan 3: Agency Power -->
+      <div class="glass-card rounded-3xl p-7 flex flex-col justify-between hover:border-[#06B6D4]/50 transition duration-300">
+        <div>
+          <div class="w-10 h-10 rounded-xl bg-[#06B6D4]/15 text-[#06B6D4] flex items-center justify-center text-xl font-bold mb-4">🏢</div>
+          <div class="text-xs font-black uppercase text-[#06B6D4] tracking-wider mb-1">AGENCY POWER</div>
+          <div class="flex items-baseline gap-1 my-3">
+            <span class="text-xl font-bold text-[#06B6D4]">₹</span>
+            <span class="text-4xl font-black text-white">1,499</span>
+            <span class="text-xs text-[#64748B] font-semibold ml-1">one-time</span>
+          </div>
+          <div class="p-3 rounded-xl bg-[#10162A] border border-[#1E293B] text-xs font-bold text-[#06B6D4] mb-6">
+            ⚡ <strong>10,000 AI Credits</strong> (~1,000 Reels)
+          </div>
+
+          <button onclick="buyCredits(10000, 1499, 'Agency Power')" class="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 text-white font-black text-xs transition mb-6">
+            Buy Agency Pack
+          </button>
+
+          <div class="space-y-3 text-xs text-[#D1D5DB]">
+            <div class="flex items-center gap-2.5"><span class="text-[#10B981] font-bold">✓</span> <strong>10,000 Credits</strong> (Bulk Volume)</div>
+            <div class="flex items-center gap-2.5"><span class="text-[#10B981] font-bold">✓</span> Multi-user Admin Access</div>
+            <div class="flex items-center gap-2.5"><span class="text-[#10B981] font-bold">✓</span> 4K 60FPS Dedicated GPU Pipeline</div>
+            <div class="flex items-center gap-2.5"><span class="text-[#10B981] font-bold">✓</span> Batch Transcriptions</div>
+            <div class="flex items-center gap-2.5"><span class="text-[#10B981] font-bold">✓</span> Dedicated 24/7 Creator Support</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Comparison Table ── -->
+    <div class="glass-card rounded-3xl p-6 lg:p-8 space-y-6">
+      <div class="text-center space-y-1">
+        <span class="text-xs font-black uppercase text-[#818CF8] tracking-wider">FEATURE BREAKDOWN</span>
+        <h3 class="text-xl font-black text-white">Detailed Plan Comparison</h3>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="border-b border-[#1E293B] text-[#94A3B8] font-bold uppercase">
+            <tr>
+              <th class="py-3 px-4">Feature</th>
+              <th class="py-3 px-4 text-center">Starter (₹299)</th>
+              <th class="py-3 px-4 text-center text-[#EC4899]">Creator Pro (₹699)</th>
+              <th class="py-3 px-4 text-center text-[#06B6D4]">Agency (₹1,499)</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[#1E293B]/60 text-white font-semibold">
+            <tr>
+              <td class="py-3.5 px-4 text-[#94A3B8]">AI Speech Credits</td>
+              <td class="py-3.5 px-4 text-center">500</td>
+              <td class="py-3.5 px-4 text-center text-[#EC4899] font-black">2,500</td>
+              <td class="py-3.5 px-4 text-center text-[#06B6D4] font-black">10,000</td>
+            </tr>
+            <tr>
+              <td class="py-3.5 px-4 text-[#94A3B8]">Max Export Resolution</td>
+              <td class="py-3.5 px-4 text-center">1080p FHD</td>
+              <td class="py-3.5 px-4 text-center text-[#10B981]">4K 60FPS Ultra</td>
+              <td class="py-3.5 px-4 text-center text-[#10B981]">4K 60FPS Ultra</td>
+            </tr>
+            <tr>
+              <td class="py-3.5 px-4 text-[#94A3B8]">Hinglish Roman Transliteration</td>
+              <td class="py-3.5 px-4 text-center text-[#10B981]">✓</td>
+              <td class="py-3.5 px-4 text-center text-[#10B981]">✓</td>
+              <td class="py-3.5 px-4 text-center text-[#10B981]">✓</td>
+            </tr>
+            <tr>
+              <td class="py-3.5 px-4 text-[#94A3B8]">Custom Font Upload (.TTF/.OTF)</td>
+              <td class="py-3.5 px-4 text-center text-[#64748B]">—</td>
+              <td class="py-3.5 px-4 text-center text-[#10B981]">✓ Included</td>
+              <td class="py-3.5 px-4 text-center text-[#10B981]">✓ Included</td>
+            </tr>
+            <tr>
+              <td class="py-3.5 px-4 text-[#94A3B8]">Alpha Channel NLE Layer (Premiere/DaVinci)</td>
+              <td class="py-3.5 px-4 text-center text-[#64748B]">—</td>
+              <td class="py-3.5 px-4 text-center text-[#10B981]">✓ Included</td>
+              <td class="py-3.5 px-4 text-center text-[#10B981]">✓ Included</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ── Instant UPI Payment Modal ── -->
+  <div id="modal-checkout" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-xl flex items-center justify-center p-4 hidden">
+    <div class="bg-[#0B0F1E] border border-[#1E293B] rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl space-y-5 text-white font-sans">
+      <div class="flex items-center justify-between border-b border-[#1E293B] pb-3">
+        <div>
+          <div class="text-[10px] font-black uppercase text-[#818CF8] tracking-wider">INSTANT UPI CHECKOUT</div>
+          <h3 class="text-base font-black text-white" id="modal-plan-title">Upgrade to Creator Pro</h3>
+        </div>
+        <button onclick="closeCheckoutModal()" class="p-1.5 rounded-lg text-[#64748B] hover:text-white transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Plan Summary Pill -->
+      <div class="p-3.5 rounded-2xl bg-[#10162A] border border-[#1E293B] flex items-center justify-between">
+        <div>
+          <div class="text-xs font-bold text-white" id="modal-credits-display">2,500 Credits</div>
+          <div class="text-[10px] text-[#94A3B8]">Lifetime validity • 1080p/4K Unlocked</div>
+        </div>
+        <div class="text-right">
+          <div class="text-xl font-black text-[#10B981]" id="modal-amount-display">₹699</div>
+          <div class="text-[9px] text-[#64748B]">All taxes included</div>
+        </div>
+      </div>
+
+      <!-- 1. Real UPI QR Code Display -->
+      <div class="text-center p-5 rounded-3xl bg-[#080C1B] border border-[#1E293B] space-y-3.5 shadow-inner">
+        <div class="inline-block p-2.5 bg-white rounded-2xl shadow-xl">
+          <img
+            src="/my-qr.jpeg"
+            alt="UPI QR Code"
+            class="w-52 h-52 sm:w-56 sm:h-56 object-contain rounded-xl mx-auto"
+            onerror="if(!this.src.includes('/static/my-qr.jpeg')) this.src='/static/my-qr.jpeg';"
+          />
+        </div>
+
+        <!-- 2. UPI Instructions -->
+        <p class="text-xs font-semibold text-slate-300 leading-relaxed px-2">
+          Scan this QR code with any UPI App (PhonePe, GPay, Paytm) to upgrade to Pro.
+        </p>
+
+        <!-- Supported UPI Apps Badges -->
+        <div class="flex items-center justify-center gap-2 pt-1">
+          <span class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-purple-300">PhonePe</span>
+          <span class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-blue-300">GPay</span>
+          <span class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-cyan-300">Paytm</span>
+          <span class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-emerald-300">BHIM UPI</span>
+        </div>
+      </div>
+
+      <!-- 3. Transaction ID Input & 4. Submit Payment Button -->
+      <form onsubmit="submitManualPayment(event)" class="space-y-4">
+        <div class="space-y-1.5 text-left">
+          <label for="input-utr-number" class="text-[11px] font-extrabold uppercase tracking-wider text-slate-300 flex items-center justify-between">
+            <span>12-digit UTR / Transaction ID</span>
+            <span class="text-[10px] text-amber-400 font-bold lowercase">required</span>
+          </label>
+          <div class="relative">
+            <input
+              id="input-utr-number"
+              type="text"
+              maxlength="12"
+              oninput="handleUtrInput(this)"
+              placeholder="e.g. 423589102456 (12 digits)"
+              class="w-full px-4 py-3 rounded-2xl bg-[#10162A] border border-[#1E293B] focus:border-[#6366F1] focus:ring-2 focus:ring-[#6366F1]/20 text-white placeholder-slate-500 font-mono text-xs tracking-wider outline-none transition"
+              required
+            />
+            <div id="utr-counter" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-mono text-slate-500 font-bold">
+              0/12
+            </div>
+          </div>
+          <p id="utr-error-msg" class="text-[11px] text-rose-400 font-semibold hidden"></p>
+          <p class="text-[10px] text-slate-500">
+            Check your payment receipt in PhonePe/GPay/Paytm for the 12-digit UTR number.
+          </p>
+        </div>
+
+        <button
+          type="submit"
+          id="btn-submit-payment"
+          class="w-full py-3.5 rounded-2xl btn-glow text-white font-black text-xs tracking-wide uppercase flex items-center justify-center gap-2 shadow-xl cursor-pointer disabled:opacity-50"
+        >
+          <span>Submit Payment</span>
+          <span>→</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Element -->
+  <div id="toast-el" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#0B0F1E] border border-[#6366F1] text-white font-bold text-xs px-6 py-3 rounded-full shadow-2xl backdrop-blur-xl hidden z-50"></div>
+
+  <!-- ── Footer ── -->
+  <footer class="mt-auto border-t border-[#1E293B] bg-[#030712] py-8 px-6 lg:px-14 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#64748B]">
+    <div>© 2026 Harsh AI Studio • 100% Secure Checkout</div>
+    <div class="flex items-center gap-6">
+      <a href="/dashboard" class="hover:text-white transition">Dashboard</a>
+      <a href="/editor" class="hover:text-white transition">Studio Editor</a>
+      <a href="/pricing" class="hover:text-white transition">Pricing</a>
+    </div>
+  </footer>
+
+  <script>
+    let selectedCredits = 2500;
+    let selectedAmount = 699;
+    let selectedPlanName = 'Creator Pro';
+
+    function updateNavCredits() {
+      const current = localStorage.getItem('hcg_credits') || '100';
+      document.getElementById('nav-credit-count').textContent = current;
+    }
+
+    function buyCredits(credits, amount, planName) {
+      selectedCredits = credits;
+      selectedAmount = amount;
+      selectedPlanName = planName;
+
+      document.getElementById('modal-plan-title').textContent = planName;
+      document.getElementById('modal-credits-display').textContent = `${credits.toLocaleString('en-IN')} AI Credits`;
+      document.getElementById('modal-amount-display').textContent = `₹${amount}`;
+
+      document.getElementById('modal-checkout').classList.remove('hidden');
+    }
+
+    function closeCheckoutModal() {
+      document.getElementById('modal-checkout').classList.add('hidden');
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast-el');
+      toast.innerHTML = msg;
+      toast.classList.remove('hidden');
+      setTimeout(() => { toast.classList.add('hidden'); }, 3500);
+    }
+
+    function handleUtrInput(input) {
+      input.value = input.value.replace(/\D/g, '');
+      const counter = document.getElementById('utr-counter');
+      if (counter) counter.textContent = `${input.value.length}/12`;
+      const err = document.getElementById('utr-error-msg');
+      if (err) err.classList.add('hidden');
+    }
+
+    async function submitManualPayment(e) {
+      if (e) e.preventDefault();
+      const input = document.getElementById('input-utr-number');
+      const err = document.getElementById('utr-error-msg');
+      const utr = (input?.value || '').trim();
+
+      if (!utr || utr.length !== 12) {
+        if (err) {
+          err.textContent = 'Please enter a valid 12-digit numeric UTR / Transaction ID.';
+          err.classList.remove('hidden');
+        } else {
+          alert('Please enter a valid 12-digit numeric UTR / Transaction ID.');
+        }
+        return;
+      }
+
+      const btn = document.getElementById('btn-submit-payment');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<svg class="animate-spin h-4 w-4 text-white inline mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg><span>Verifying UTR...</span>`;
+      }
+
+      // Record pending payment in localStorage
+      const paymentRecord = {
+        utr: utr,
+        plan: selectedPlanName,
+        amount: selectedAmount,
+        credits: selectedCredits,
+        status: 'pending_verification',
+        timestamp: new Date().toISOString()
+      };
+      const history = JSON.parse(localStorage.getItem('hcg_pending_payments') || '[]');
+      history.push(paymentRecord);
+      localStorage.setItem('hcg_pending_payments', JSON.stringify(history));
+
+      setTimeout(() => {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `<span>Submit Payment</span><span>→</span>`;
+        }
+        closeCheckoutModal();
+        if (input) input.value = '';
+        const counter = document.getElementById('utr-counter');
+        if (counter) counter.textContent = '0/12';
+
+        // Exact success toast required:
+        showToast('Payment details submitted! Your account will be upgraded shortly after verification.');
+      }, 900);
+    }
+
+    updateNavCredits();
+    document.addEventListener('DOMContentLoaded', () => {
+      buyCredits(2500, 699, 'Creator Pro');
+    });
+  </script>
+</body>
+</html>
