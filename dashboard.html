@@ -272,35 +272,104 @@
           document.getElementById('role-badge').classList.remove('hidden');
         }
 
-        // Render Projects
-        const projects = data.projects || [];
-        const container = document.getElementById('projects-container');
-        if (projects.length > 0) {
-          container.innerHTML = projects.map(p => `
-            <div class="p-5 bg-[#0B0F19] border border-[#1E293B] hover:border-[#6366F1]/40 rounded-2xl transition flex flex-col justify-between group">
-              <div>
-                <div class="flex items-center justify-between mb-3">
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-[#6366F1]/15 text-[#818CF8] uppercase">
-                    ${p.language || 'Hinglish'}
-                  </span>
-                  <span class="text-[11px] text-[#64748B] font-medium">${p.created_at || 'Recent'}</span>
-                </div>
-                <h3 class="text-sm font-bold text-white mb-1 truncate">${p.title || 'Untitled Video'}</h3>
-                <p class="text-xs text-[#64748B] truncate">${p.filename || 'video.mp4'}</p>
-              </div>
-              <div class="mt-4 pt-3 border-t border-[#1E293B]/60 flex items-center justify-between">
-                <span class="text-xs text-[#94A3B8] font-medium">${p.duration ? p.duration + 's' : 'Ready'}</span>
-                <a href="/editor" class="text-xs font-bold text-[#818CF8] hover:text-white flex items-center gap-1">
-                  <span>Open Editor</span>
-                  <span>→</span>
-                </a>
-              </div>
-            </div>
-          `).join('');
-        }
+        // Gather projects from API and localStorage
+        let projects = data.projects || [];
+        try {
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('harsh_project_')) {
+              const p = JSON.parse(localStorage.getItem(key));
+              if (p && p.id && !projects.some(x => x.id === p.id)) {
+                projects.unshift(p);
+              }
+            }
+          }
+        } catch (_) {}
+
+        window.dashboardProjects = projects;
+        renderDashboardProjects(projects);
       } catch (err) {
         console.error("Dashboard load error:", err);
       }
+    }
+
+    function renderDashboardProjects(projects) {
+      const container = document.getElementById('projects-container');
+      if (!container) return;
+
+      if (!projects || projects.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 bg-[#0B0F19] border border-[#1E293B] rounded-2xl col-span-full text-center py-12">
+            <div class="text-4xl mb-3">🎬</div>
+            <div class="text-base font-extrabold text-white mb-1">No saved projects yet</div>
+            <div class="text-xs text-[#94A3B8] max-w-sm mx-auto mb-4">
+              Upload your first video to transcribe speech into viral animated captions!
+            </div>
+            <a href="/editor" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] text-white text-xs font-black shadow-lg hover:scale-105 transition">
+              <span>+ Create First Project</span>
+            </a>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = projects.map(p => `
+        <div id="dash-proj-${p.id}" class="p-5 bg-[#0B0F19] border border-[#1E293B] hover:border-[#6366F1]/50 rounded-2xl transition duration-300 flex flex-col justify-between group shadow-xl hover:shadow-[0_0_25px_rgba(99,102,241,0.2)]">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-[#6366F1]/15 text-[#818CF8] border border-[#6366F1]/30 uppercase tracking-wider">
+                ${p.language || 'Hinglish'}
+              </span>
+              <span class="text-[11px] text-[#64748B] font-medium">${p.created_at || 'Recent'}</span>
+            </div>
+            <h3 class="text-sm font-extrabold text-white mb-1 truncate" title="${p.title || 'Untitled Video'}">${p.title || 'Untitled Video'}</h3>
+            <p class="text-xs text-[#64748B] truncate">${p.filename || 'video.mp4'}</p>
+          </div>
+          <div class="mt-4 pt-3.5 border-t border-[#1E293B]/70 flex items-center justify-between">
+            <span class="text-xs text-[#94A3B8] font-semibold">${p.duration ? (Number(p.duration).toFixed(1) + 's') : 'Video'}</span>
+            <div class="flex items-center gap-2">
+              <button onclick="deleteDashboardProject('${p.id}', '${(p.title || 'Video').replace(/'/g, "\\'")}')" class="p-1.5 text-[#64748B] hover:text-red-400 hover:bg-red-500/10 rounded-lg transition" title="Delete Project">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+              <a href="/editor?project=${p.id}" class="text-xs font-extrabold text-[#818CF8] hover:text-white flex items-center gap-1 bg-[#6366F1]/10 px-2.5 py-1 rounded-lg border border-[#6366F1]/30 hover:bg-[#6366F1]/20 transition">
+                <span>Edit</span>
+                <span>→</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function deleteDashboardProject(projectId, projectTitle) {
+      if (!projectId) return;
+      if (!confirm(`Are you sure you want to delete "${projectTitle || 'this project'}"?`)) return;
+
+      // 1. Permanently remove from localStorage
+      try {
+        localStorage.removeItem('harsh_project_' + projectId);
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key && (key === 'harsh_project_' + projectId || key.includes(projectId))) {
+            localStorage.removeItem(key);
+          }
+        }
+      } catch(e) {}
+
+      // 2. Remove from state array
+      window.dashboardProjects = (window.dashboardProjects || []).filter(p => p.id !== projectId);
+
+      // 3. Call backend delete
+      try {
+        await fetch('/api/delete_project', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: projectId })
+        });
+      } catch (_) {}
+
+      // 4. Update UI
+      renderDashboardProjects(window.dashboardProjects);
     }
 
     async function handleLogout() {

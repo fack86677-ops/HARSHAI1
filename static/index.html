@@ -34,9 +34,9 @@
       }
     }
   </script>
-  <link rel="stylesheet" href="/static/css/styles.css?v=2.2">
+  <link rel="stylesheet" href="/static/css/styles.css?v=2.5">
 </head>
-<body class="bg-[#030712] text-[#F8FAFC] font-sans h-screen flex flex-col overflow-hidden select-none">
+<body class="bg-[#030712] text-[#F8FAFC] font-sans min-h-screen flex flex-col overflow-x-hidden overflow-y-auto select-none">
   
   <!-- Ambient Auroras -->
   <div class="ambient-mesh"></div>
@@ -45,9 +45,9 @@
   <!-- ========================================== -->
   <!-- SCREEN 1: DASHBOARD VIEW                   -->
   <!-- ========================================== -->
-  <div id="screen-dashboard" class="app-screen flex-1 flex overflow-hidden relative z-10">
+  <div id="screen-dashboard" class="app-screen w-full min-h-screen flex-1 flex flex-col md:flex-row relative z-10 overflow-y-auto">
     <!-- Left Sidebar -->
-    <aside class="w-64 bg-[#080C1B]/90 backdrop-blur-2xl border-r border-[#1E293B]/80 flex flex-col justify-between p-4 shrink-0 shadow-2xl">
+    <aside class="w-full md:w-64 bg-[#080C1B]/95 backdrop-blur-2xl border-b md:border-b-0 md:border-r border-[#1E293B]/80 flex flex-col justify-between p-4 shrink-0 shadow-2xl md:sticky md:top-0 md:h-screen md:overflow-y-auto z-20">
       <div>
         <!-- Logo -->
         <a href="/dashboard" class="flex items-center gap-3 mb-8 px-2 py-1 text-decoration-none group">
@@ -121,7 +121,7 @@
     </aside>
 
     <!-- Main Content Area -->
-    <main class="flex-1 flex flex-col overflow-y-auto bg-[#030712]/70">
+    <main class="flex-1 flex flex-col bg-[#030712]/70 min-h-screen w-full overflow-y-visible">
       <!-- Top Bar -->
       <header class="h-16 border-b border-[#1E293B]/80 px-8 flex items-center justify-between shrink-0 bg-[#080C1B]/80 backdrop-blur-xl sticky top-0 z-30">
         <!-- Search Input -->
@@ -157,13 +157,13 @@
       </header>
 
       <!-- Dashboard Body -->
-      <div class="p-8 max-w-6xl w-full mx-auto space-y-8">
+      <div class="p-6 md:p-8 max-w-6xl w-full mx-auto space-y-8">
         <!-- Ultra-Premium High-Tech Upload Box -->
         <div id="dropzone-outer-wrapper" class="relative group w-full">
           <!-- Animated Cyber Glow Backdrop -->
           <div class="absolute -inset-1 bg-gradient-to-r from-[#6366F1] via-[#EC4899] to-[#06B6D4] rounded-3xl blur-xl opacity-30 group-hover:opacity-75 transition duration-500 group-hover:duration-200 animate-pulse pointer-events-none"></div>
 
-          <label for="file-upload-input" id="main-dropzone" class="relative block w-full rounded-3xl bg-[#080C1B]/95 border-2 border-dashed border-[#6366F1]/50 hover:border-[#6366F1] p-10 md:p-14 text-center cursor-pointer transition-all duration-300 backdrop-blur-2xl shadow-2xl hover:shadow-[0_0_50px_rgba(99,102,241,0.4)]">
+          <label for="file-upload-input" id="main-dropzone" class="relative block w-full rounded-3xl bg-[#080C1B]/95 hover:bg-[#0B0F24] border-2 border-dashed border-[#6366F1]/45 hover:border-[#6366F1] p-8 md:p-14 text-center cursor-pointer transition-all duration-300 backdrop-blur-2xl shadow-[0_10px_40px_rgba(0,0,0,0.7)] hover:shadow-[0_0_50px_rgba(99,102,241,0.35)] group-hover:scale-[1.006]">
             <!-- Hidden native input with explicit inline onchange -->
             <input 
               type="file" 
@@ -175,12 +175,18 @@
             >
 
             <div id="dropzone-content-default" class="flex flex-col items-center justify-center">
+              <!-- Live Feature Badge -->
+              <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#6366F1]/10 border border-[#6366F1]/30 text-[#A5B4FC] text-xs font-bold mb-5 shadow-[0_0_15px_rgba(99,102,241,0.15)]">
+                <span class="w-2 h-2 rounded-full bg-[#10B981] animate-ping"></span>
+                <span>AI Speech Engine Ready • Hinglish (Roman Script) & 10+ Languages</span>
+              </div>
+
               <!-- Glowing Icon Container with Radar Waves -->
-              <div class="relative mb-6">
-                <div class="absolute -inset-3 bg-[#6366F1]/25 rounded-full blur-xl animate-ping pointer-events-none"></div>
-                <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-[#6366F1] via-[#8B5CF6] to-[#EC4899] p-0.5 shadow-2xl flex items-center justify-center group-hover:scale-110 transition duration-300">
+              <div class="relative mb-5">
+                <div class="absolute -inset-4 bg-[#6366F1]/20 rounded-full blur-xl animate-pulse pointer-events-none"></div>
+                <div class="w-20 h-20 rounded-3xl bg-gradient-to-tr from-[#6366F1] via-[#8B5CF6] to-[#EC4899] p-0.5 shadow-2xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-1 transition duration-300">
                   <div class="w-full h-full bg-[#0B0F1E] rounded-[22px] flex items-center justify-center text-white">
-                    <svg class="w-9 h-9 text-[#818CF8] group-hover:text-white transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-9 h-9 text-[#818CF8] group-hover:text-white transition transform group-hover:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                     </svg>
                   </div>
@@ -188,27 +194,27 @@
               </div>
 
               <h3 class="text-2xl md:text-3xl font-black text-white tracking-tight mb-2">
-                Drop your video or audio to start
+                Drop your video or audio to auto-generate captions
               </h3>
               <p class="text-xs md:text-sm text-[#94A3B8] max-w-lg mx-auto mb-6">
-                AI Speech Transcription • Fast Millisecond Timestamps • 22+ Viral Templates
+                Instant word-by-word highlights • Hormozi animations • 100% Romanized Hinglish script
               </p>
 
               <!-- Prominent CTA Button -->
               <div class="mb-6">
-                <span class="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#6366F1] via-[#8B5CF6] to-[#EC4899] text-white font-black text-xs md:text-sm shadow-[0_0_30px_rgba(99,102,241,0.5)] group-hover:shadow-[0_0_40px_rgba(99,102,241,0.8)] transition transform group-hover:scale-105">
+                <span class="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#6366F1] via-[#8B5CF6] to-[#EC4899] text-white font-black text-xs md:text-sm shadow-[0_0_30px_rgba(99,102,241,0.5)] group-hover:shadow-[0_0_45px_rgba(99,102,241,0.85)] transition transform group-hover:scale-105">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
-                  <span>Select Video / Audio File</span>
+                  <span>Select Video / Audio From Device</span>
                 </span>
               </div>
 
               <!-- Format Pills -->
-              <div class="flex flex-wrap items-center justify-center gap-2 pt-2">
-                <span class="px-3 py-1.5 rounded-full bg-[#6366F1]/15 text-[#A5B4FC] text-xs font-bold border border-[#6366F1]/30">🎥 MP4</span>
-                <span class="px-3 py-1.5 rounded-full bg-[#06B6D4]/15 text-[#67E8F9] text-xs font-bold border border-[#06B6D4]/30">🍏 MOV (ProRes)</span>
-                <span class="px-3 py-1.5 rounded-full bg-[#EC4899]/15 text-[#F472B6] text-xs font-bold border border-[#EC4899]/30">🌐 WebM</span>
-                <span class="px-3 py-1.5 rounded-full bg-[#10B981]/15 text-[#6EE7B7] text-xs font-bold border border-[#10B981]/30">🎙️ MP3 / WAV</span>
-                <span class="px-3 py-1.5 rounded-full bg-[#F59E0B]/15 text-[#FCD34D] text-xs font-bold border border-[#F59E0B]/30">⚡ Up to 500MB</span>
+              <div class="flex flex-wrap items-center justify-center gap-2 pt-1">
+                <span class="px-3 py-1 rounded-full bg-[#6366F1]/15 text-[#A5B4FC] text-xs font-bold border border-[#6366F1]/30">🎥 MP4</span>
+                <span class="px-3 py-1 rounded-full bg-[#06B6D4]/15 text-[#67E8F9] text-xs font-bold border border-[#06B6D4]/30">🍏 MOV (ProRes)</span>
+                <span class="px-3 py-1 rounded-full bg-[#EC4899]/15 text-[#F472B6] text-xs font-bold border border-[#EC4899]/30">🌐 WebM</span>
+                <span class="px-3 py-1 rounded-full bg-[#10B981]/15 text-[#6EE7B7] text-xs font-bold border border-[#10B981]/30">🎙️ MP3 / WAV</span>
+                <span class="px-3 py-1 rounded-full bg-[#F59E0B]/15 text-[#FCD34D] text-xs font-bold border border-[#F59E0B]/30">⚡ Up to 500MB</span>
               </div>
             </div>
 
@@ -221,16 +227,52 @@
           </label>
         </div>
 
+        <!-- 3 Feature Highlight Cards Below Dropzone -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 rounded-2xl bg-[#0B0F1E]/70 border border-white/[0.06] hover:border-[#6366F1]/40 transition flex items-center gap-3.5 backdrop-blur-md">
+            <div class="w-10 h-10 rounded-xl bg-[#6366F1]/15 text-[#818CF8] flex items-center justify-center text-lg shrink-0">
+              ⚡
+            </div>
+            <div>
+              <div class="text-xs font-extrabold text-white">Native Hinglish Script</div>
+              <div class="text-[11px] text-[#94A3B8]">Auto-transcribed in readable Roman script without Devanagari.</div>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-[#0B0F1E]/70 border border-white/[0.06] hover:border-[#EC4899]/40 transition flex items-center gap-3.5 backdrop-blur-md">
+            <div class="w-10 h-10 rounded-xl bg-[#EC4899]/15 text-[#F472B6] flex items-center justify-center text-lg shrink-0">
+              🔥
+            </div>
+            <div>
+              <div class="text-xs font-extrabold text-white">22+ Viral Reel Presets</div>
+              <div class="text-[11px] text-[#94A3B8]">Alex Hormozi, MrBeast neon, bouncing word animations.</div>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-[#0B0F1E]/70 border border-white/[0.06] hover:border-[#10B981]/40 transition flex items-center gap-3.5 backdrop-blur-md">
+            <div class="w-10 h-10 rounded-xl bg-[#10B981]/15 text-[#6EE7B7] flex items-center justify-center text-lg shrink-0">
+              🎬
+            </div>
+            <div>
+              <div class="text-xs font-extrabold text-white">Burned MP4 & Subtitles</div>
+              <div class="text-[11px] text-[#94A3B8]">Direct burned-in captions, SRT, and VTT download options.</div>
+            </div>
+          </div>
+        </div>
+
         <!-- Recent Videos Section -->
-        <div class="space-y-4">
+        <div class="space-y-4 pt-2">
           <div class="flex items-center justify-between">
-            <h2 class="text-lg font-extrabold text-white tracking-tight flex items-center gap-2">
-              <span>🎬</span> Recent Projects & Captions
-            </h2>
-            <span class="text-xs text-[#94A3B8]">Click any video to open editor</span>
+            <div class="flex items-center gap-2.5">
+              <h2 class="text-lg font-extrabold text-white tracking-tight flex items-center gap-2">
+                <span>🎬</span> Recent Projects & Captions
+              </h2>
+              <span id="recent-projects-counter" class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-[#6366F1]/15 text-[#818CF8] border border-[#6366F1]/30">Auto Saved</span>
+            </div>
+            <span class="text-xs text-[#94A3B8]">Click any project to resume editing</span>
           </div>
           <div id="recent-videos-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-            <!-- Dynamic Project Cards -->
+            <!-- Dynamic Project Cards rendered by renderRecentProjectsGrid -->
           </div>
         </div>
       </div>
@@ -977,7 +1019,7 @@
   <script src="/static/js/player.js?v=2.2"></script>
   <script src="/static/js/timeline.js?v=2.2"></script>
   <script src="/static/js/editor.js?v=2.3"></script>
-  <script src="/static/js/app.js?v=2.4"></script>
+  <script src="/static/js/app.js?v=2.5"></script>
 
   <!-- Credit & User System -->
   <script>

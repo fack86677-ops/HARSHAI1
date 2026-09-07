@@ -160,6 +160,14 @@ function showScreen(screenId) {
     }
   }
 
+  // Toggle in-studio body class for locked video editing canvas vs smooth scrolling dashboard
+  if (screenId === 'screen-studio') {
+    document.body.classList.add('in-studio');
+  } else {
+    document.body.classList.remove('in-studio');
+    try { loadRecentProjects(); } catch (_) {}
+  }
+
   document.querySelectorAll('.app-screen').forEach(s => {
     s.classList.add('hidden');
     s.style.setProperty('display', 'none', 'important');
@@ -654,93 +662,194 @@ function openStudioEditor(project) {
   saveCurrentProject();
 }
 
+window.recentProjectsList = [];
+
 async function loadRecentProjects() {
   const container = document.getElementById('recent-videos-grid');
   if (!container) return;
 
   try {
-    let projects = [];
+    let loadedProjects = [];
+
+    // 1. Fetch from serverless backend if available
     try {
       const res = await fetch(API_BASE + '/api/projects');
       if (res.ok) {
         const data = await res.json();
-        projects = data.projects || [];
-      }
-    } catch (_) {}
-
-    // Also include projects from localStorage
-    try {
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('harsh_project_')) {
-          const item = JSON.parse(localStorage.getItem(key));
-          if (item && !projects.some(p => p.id === item.id)) {
-            projects.unshift(item);
-          }
+        if (Array.isArray(data.projects)) {
+          loadedProjects = data.projects;
         }
       }
     } catch (_) {}
 
-    container.innerHTML = '';
-    projects.forEach(proj => {
-      const card = document.createElement('div');
-      card.className = 'glass-card rounded-2xl overflow-hidden cursor-pointer transition group flex flex-col border border-[#1E293B] hover:border-[#6366F1]/50';
-
-      card.innerHTML = `
-        <div class="relative aspect-[9/16] bg-black flex items-center justify-center overflow-hidden">
-          <img src="${proj.thumbnail || '/static/assets/demo_thumb.jpg'}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='/static/assets/demo_thumb.jpg'" />
-          <div class="absolute inset-0 bg-black/40 group-hover:bg-black/10 transition flex items-center justify-center">
-            <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition border border-white/30">
-              <svg class="w-6 h-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            </div>
-          </div>
-          <div class="absolute bottom-3 left-3 right-3 px-2 py-0.5 bg-black/70 backdrop-blur rounded-lg text-[10px] font-extrabold text-[#818CF8] truncate border border-[#6366F1]/30">
-            ⚡ AI Captions Synced
-          </div>
-        </div>
-        <div class="p-3.5 flex items-start justify-between bg-[#0B0F1E]/80">
-          <div class="flex-1 min-w-0 pr-2">
-            <h4 class="text-xs font-bold text-white group-hover:text-[#818CF8] transition truncate">${proj.title}</h4>
-            <p class="text-[10px] text-[#64748B] mt-0.5">${proj.created_at} • ${proj.language || 'Hinglish'}</p>
-          </div>
-          <button class="btn-delete-proj text-[#64748B] hover:text-red-400 p-1.5 rounded-lg hover:bg-[#10162A] transition shrink-0" title="Delete Project">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-          </button>
-        </div>
-      `;
-
-      // Open project on card click
-      card.addEventListener('click', () => {
-        openStudioEditor(proj);
-      });
-
-      // Delete project on delete button click
-      const delBtn = card.querySelector('.btn-delete-proj');
-      if (delBtn) {
-        delBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          if (confirm(`Kya aap project "${proj.title}" ko delete karna chahte hain?`)) {
-            try {
-              await fetch(API_BASE + '/api/delete_project', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: proj.id })
-              });
-              if (window.showToast) window.showToast(`🗑️ Project "${proj.title}" deleted!`);
-              loadRecentProjects();
-            } catch (err) {
-              alert("Delete error: " + err.message);
+    // 2. Fetch from localStorage persistent storage
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('harsh_project_')) {
+          try {
+            const item = JSON.parse(localStorage.getItem(key));
+            if (item && item.id && !loadedProjects.some(p => p.id === item.id)) {
+              loadedProjects.unshift(item);
             }
-          }
-        });
+          } catch (_) {}
+        }
       }
+    } catch (_) {}
 
-      container.appendChild(card);
-    });
+    window.recentProjectsList = loadedProjects;
+    renderRecentProjectsGrid();
   } catch (err) {
     console.error("Error loading recent projects:", err);
   }
 }
+
+function renderRecentProjectsGrid() {
+  const container = document.getElementById('recent-videos-grid');
+  if (!container) return;
+
+  const projects = window.recentProjectsList || [];
+  container.innerHTML = '';
+
+  if (projects.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full py-12 px-6 rounded-3xl bg-[#080C1B]/60 border border-dashed border-[#1E293B] flex flex-col items-center justify-center text-center">
+        <div class="w-16 h-16 rounded-2xl bg-[#6366F1]/10 border border-[#6366F1]/20 flex items-center justify-center text-2xl mb-3 shadow-[0_0_20px_rgba(99,102,241,0.15)]">
+          🎬
+        </div>
+        <h4 class="text-sm font-extrabold text-white mb-1">No Projects Saved Yet</h4>
+        <p class="text-xs text-[#94A3B8] max-w-sm mb-4">Upload a video or audio clip above to automatically generate animated viral captions!</p>
+        <button onclick="document.getElementById('file-upload-input')?.click()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] text-white text-xs font-extrabold shadow-lg hover:scale-105 transition">
+          + Upload Video Now
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  projects.forEach(proj => {
+    const card = document.createElement('div');
+    card.id = 'project-card-' + proj.id;
+    card.className = 'group relative rounded-2xl bg-[#0B0F1E]/90 border border-[#1E293B]/90 hover:border-[#6366F1]/60 backdrop-blur-xl overflow-hidden shadow-xl hover:shadow-[0_0_30px_rgba(99,102,241,0.25)] transition duration-300 flex flex-col cursor-pointer';
+
+    card.innerHTML = `
+      <div class="relative aspect-[9/16] bg-black/60 flex items-center justify-center overflow-hidden">
+        <img src="${proj.thumbnail || '/static/assets/demo_thumb.jpg'}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" onerror="this.src='/static/assets/demo_thumb.jpg'" />
+        <div class="absolute inset-0 bg-gradient-to-t from-[#0B0F1E] via-transparent to-black/30 pointer-events-none"></div>
+
+        <!-- Play Overlay on Hover -->
+        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition duration-200 flex items-center justify-center">
+          <div class="w-12 h-12 rounded-full bg-[#6366F1]/90 backdrop-blur-md text-white flex items-center justify-center shadow-[0_0_20px_rgba(99,102,241,0.8)] transform group-hover:scale-110 transition border border-white/30">
+            <svg class="w-6 h-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+        </div>
+
+        <!-- Top Badges -->
+        <div class="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+          <span class="px-2 py-0.5 rounded-full text-[9px] font-black tracking-wider uppercase bg-black/70 backdrop-blur-md border border-[#6366F1]/40 text-[#818CF8]">
+            ${proj.language || 'Hinglish'}
+          </span>
+          <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-black/70 backdrop-blur-md border border-white/10 text-white">
+            ${proj.duration ? (Number(proj.duration).toFixed(1) + 's') : 'Video'}
+          </span>
+        </div>
+
+        <!-- Bottom Captions Synced Pill -->
+        <div class="absolute bottom-2.5 left-2.5 right-2.5 px-2.5 py-1 bg-black/75 backdrop-blur-md rounded-xl text-[10px] font-bold text-[#A5B4FC] truncate border border-white/10 flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
+          <span class="truncate">${(proj.captions?.length || proj.segments?.length || 0)} Captions Synced</span>
+        </div>
+      </div>
+
+      <!-- Card Info Footer -->
+      <div class="p-3.5 flex items-center justify-between bg-[#080C1B]/95 border-t border-[#1E293B]/70">
+        <div class="flex-1 min-w-0 pr-2">
+          <h4 class="text-xs font-extrabold text-white group-hover:text-[#818CF8] transition truncate" title="${proj.title || 'Untitled Video'}">${proj.title || 'Untitled Video'}</h4>
+          <p class="text-[10px] text-[#64748B] mt-0.5 truncate">${proj.created_at || 'Saved'} • ${(proj.filename || 'video.mp4')}</p>
+        </div>
+
+        <!-- Delete Button -->
+        <div class="flex items-center gap-1 shrink-0">
+          <button class="btn-delete-proj p-1.5 rounded-lg text-[#64748B] hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition" title="Delete Project">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Clicking card (except delete button) opens editor
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('.btn-delete-proj')) return;
+      openStudioEditor(proj);
+    });
+
+    // Delete handler
+    const delBtn = card.querySelector('.btn-delete-proj');
+    if (delBtn) {
+      delBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        await window.deleteProject(proj.id, proj.title);
+      });
+    }
+
+    container.appendChild(card);
+  });
+}
+
+// Global permanent project deletion
+window.deleteProject = async function(projectId, projectTitle) {
+  if (!projectId) return;
+
+  const confirmed = confirm(`Are you sure you want to permanently delete "${projectTitle || 'this project'}"?`);
+  if (!confirmed) return;
+
+  // 1. Permanently remove from LocalStorage
+  try {
+    localStorage.removeItem('harsh_project_' + projectId);
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && (key === 'harsh_project_' + projectId || key.includes(projectId))) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch (e) {
+    console.warn("LocalStorage remove note:", e);
+  }
+
+  // 2. Remove from frontend state array
+  if (Array.isArray(window.recentProjectsList)) {
+    window.recentProjectsList = window.recentProjectsList.filter(p => p.id !== projectId);
+  }
+
+  // 3. Clear active project if currently open
+  if (currentProject && currentProject.id === projectId) {
+    currentProject = null;
+    window.currentProject = null;
+  }
+  if (window.uploadedVideo && window.uploadedVideo.id === projectId) {
+    window.uploadedVideo = null;
+  }
+
+  // 4. Call serverless delete endpoint
+  try {
+    await fetch(API_BASE + '/api/delete_project', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: projectId })
+    });
+  } catch (apiErr) {
+    console.warn("Backend delete sync note:", apiErr.message);
+  }
+
+  // 5. Instantly update UI
+  renderRecentProjectsGrid();
+
+  // 6. Show toast
+  if (window.showToast) {
+    window.showToast(`🗑️ Project "${projectTitle || 'Video'}" permanently deleted!`);
+  }
+};
 
 async function saveCurrentProject() {
   if (!currentProject) return;
