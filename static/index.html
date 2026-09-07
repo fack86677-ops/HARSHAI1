@@ -974,38 +974,83 @@
     </div>
   </div>
 
-  <!-- UPGRADE TO PRO MODAL (TIER SWITCHER & PRO UNLOCK DIALOG) -->
-  <div id="modal-upgrade-pro" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-[#0B0F1E] border border-[#1E293B] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 text-center">
-      <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-amber-500 via-orange-500 to-[#6366F1] mx-auto flex items-center justify-center text-3xl shadow-[0_0_30px_rgba(245,158,11,0.4)]">
-        👑
-      </div>
-      <div class="space-y-1.5">
-        <h3 class="text-lg font-black text-white">Upgrade to Creator Pro</h3>
-        <p id="upgrade-modal-reason" class="text-xs text-[#94A3B8]">1080p/4K exports, AI Emojis, and Audio Enhancement are exclusive to Pro members.</p>
-      </div>
-      <div class="p-4 bg-[#10162A] border border-[#1E293B] rounded-2xl text-left space-y-2 text-xs">
-        <div class="text-[10px] font-bold text-amber-400 uppercase tracking-wider">CREATOR PRO INCLUDES:</div>
-        <div class="flex items-center gap-2 text-slate-200">
-          <span class="text-[#10B981] font-bold">✓</span> <span>1080p FHD & 4K Ultra video exports</span>
+  <!-- UPGRADE TO PRO MODAL (MANUAL UPI CHECKOUT & PRO UNLOCK DIALOG) -->
+  <div id="modal-upgrade-pro" class="modal-backdrop fixed inset-0 z-50 flex items-center justify-center p-4 hidden max-h-screen overflow-y-auto">
+    <div class="bg-[#0B0F1E] border border-[#1E293B] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 text-center my-auto">
+      <div class="flex items-center justify-between border-b border-[#1E293B] pb-3">
+        <div class="text-left">
+          <div class="text-[10px] font-black uppercase tracking-wider text-[#818CF8]">MANUAL UPI UPGRADE</div>
+          <h3 class="text-base font-black text-white flex items-center gap-1.5">
+            <span>👑</span> Upgrade to Creator Pro
+          </h3>
         </div>
-        <div class="flex items-center gap-2 text-slate-200">
-          <span class="text-[#10B981] font-bold">✓</span> <span>AI Viral Emojis & Word Animations</span>
-        </div>
-        <div class="flex items-center gap-2 text-slate-200">
-          <span class="text-[#10B981] font-bold">✓</span> <span>Neural Vocal Clarity & Studio Noise Cleaner</span>
-        </div>
-        <div class="flex items-center gap-2 text-slate-200">
-          <span class="text-[#10B981] font-bold">✓</span> <span>100 AI Video Rendering Credits</span>
-        </div>
-      </div>
-      <div class="flex gap-2">
-        <button id="btn-simulate-toggle-pro" onclick="window.setUserPlan('pro')" class="flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-extrabold text-xs rounded-xl shadow-lg transition">
-          Switch to Pro (Unlock All)
+        <button onclick="document.getElementById('modal-upgrade-pro').classList.add('hidden')" class="p-1 rounded-lg text-slate-400 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
-        <button id="btn-close-upgrade-modal" onclick="document.getElementById('modal-upgrade-pro').classList.add('hidden')" class="px-4 py-3 bg-[#10162A] hover:bg-[#182242] border border-[#1E293B] text-slate-300 font-bold text-xs rounded-xl transition">
-          Close
+      </div>
+
+      <p id="upgrade-modal-reason" class="text-xs text-[#94A3B8] text-left">
+        1080p/4K exports, AI Emojis, and Audio Enhancement are exclusive to Creator Pro members.
+      </p>
+
+      <!-- Center Real UPI QR Code -->
+      <div class="p-4 rounded-2xl bg-[#06080F] border border-[#1E293B] text-center space-y-2.5">
+        <div class="inline-block p-1.5 bg-black rounded-2xl border border-white/20 shadow-xl">
+          <img
+            src="/my-qr.jpeg"
+            alt="UPI Payment QR Code"
+            class="w-40 h-40 mx-auto object-contain rounded-xl bg-black shadow-inner"
+            onerror="if(!this.dataset.tried){this.dataset.tried='true';this.src='/static/my-qr.jpeg';}"
+          />
+        </div>
+
+        <div class="flex items-center justify-center gap-1.5">
+          <span class="px-2 py-0.5 rounded bg-purple-950/60 border border-purple-500/40 text-purple-300 text-[9px] font-black">PhonePe</span>
+          <span class="px-2 py-0.5 rounded bg-blue-950/60 border border-blue-500/40 text-blue-300 text-[9px] font-black">GPay</span>
+          <span class="px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 text-[9px] font-black">Paytm</span>
+          <span class="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-[9px] font-black">BHIM</span>
+        </div>
+
+        <p class="text-xs text-[#CBD5E1] font-semibold leading-relaxed max-w-xs mx-auto">
+          Scan this QR code with any UPI App (PhonePe, GPay, Paytm) to upgrade to Pro.
+        </p>
+      </div>
+
+      <!-- Transaction ID / UTR Input & Submit -->
+      <div class="space-y-2.5 text-left">
+        <div>
+          <label for="editor-utr-input" class="block text-[10px] font-extrabold text-[#94A3B8] uppercase tracking-wider mb-1">
+            12-digit UTR / Transaction ID <span class="text-[#EC4899]">*</span>
+          </label>
+          <input
+            id="editor-utr-input"
+            type="text"
+            placeholder="e.g. 423589102456"
+            maxlength="20"
+            class="w-full px-3.5 py-2.5 rounded-xl bg-[#10162A] border border-[#1E293B] text-white text-xs font-mono placeholder-[#475569] focus:outline-none focus:border-[#6366F1] focus:ring-1 focus:ring-[#6366F1] transition"
+          />
+          <div id="editor-utr-error" class="text-[10px] text-[#EF4444] font-bold mt-1 hidden">
+            ⚠️ Please enter the 12-digit UTR / Transaction ID.
+          </div>
+        </div>
+
+        <button
+          id="btn-submit-editor-payment"
+          onclick="submitEditorPayment()"
+          class="w-full py-3 rounded-xl bg-gradient-to-r from-[#6366F1] via-[#8B5CF6] to-[#EC4899] hover:from-[#4F46E5] hover:to-[#DB2777] text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 cursor-pointer transition"
+        >
+          <span>Submit Payment</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
         </button>
+
+        <div class="flex items-center justify-between pt-1 text-[10px] text-slate-400">
+          <button onclick="window.toggleUserPlan()" class="text-amber-400 hover:underline font-bold">
+            Switch Plan (Free/Pro Demo)
+          </button>
+          <a href="/pricing" class="text-indigo-400 hover:underline font-bold">
+            View All Plans →
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -1148,11 +1193,49 @@
     window.showUpgradeModal = function(reason) {
       const modal = document.getElementById('modal-upgrade-pro');
       const reasonEl = document.getElementById('upgrade-modal-reason');
+      const utrEl = document.getElementById('editor-utr-input');
+      const errEl = document.getElementById('editor-utr-error');
+      if (utrEl) utrEl.value = '';
+      if (errEl) errEl.classList.add('hidden');
       if (reasonEl && reason) reasonEl.textContent = reason;
       if (modal) {
         modal.classList.remove('hidden');
         modal.style.display = 'flex';
       }
+    };
+
+    window.submitEditorPayment = function() {
+      const utrEl = document.getElementById('editor-utr-input');
+      const errEl = document.getElementById('editor-utr-error');
+      const utrVal = utrEl ? utrEl.value.trim() : '';
+
+      if (!utrVal || utrVal.length < 8) {
+        if (errEl) errEl.classList.remove('hidden');
+        return;
+      }
+      if (errEl) errEl.classList.add('hidden');
+
+      const btn = document.getElementById('btn-submit-editor-payment');
+      btn.disabled = true;
+      btn.innerHTML = '<span>Submitting Details... ⏳</span>';
+
+      setTimeout(() => {
+        try {
+          const subs = JSON.parse(localStorage.getItem('hcg_payment_submissions') || '[]');
+          subs.unshift({ utr: utrVal, plan: 'Creator Pro', timestamp: new Date().toISOString() });
+          localStorage.setItem('hcg_payment_submissions', JSON.stringify(subs));
+        } catch(_) {}
+
+        document.getElementById('modal-upgrade-pro').classList.add('hidden');
+        btn.disabled = false;
+        btn.innerHTML = '<span>Submit Payment</span>';
+
+        if (window.showToast) {
+          window.showToast('Payment details submitted! Your account will be upgraded shortly after verification.');
+        } else {
+          alert('Payment details submitted! Your account will be upgraded shortly after verification.');
+        }
+      }, 700);
     };
 
     window.updateTierUI = function() {
