@@ -185,17 +185,15 @@ function initDropzone() {
 
   if (!dropzone || !fileInput) return;
 
-  // 1. Prevent click event on fileInput from bubbling up to dropzone (fixes recursion/browser cancellation)
-  fileInput.addEventListener('click', (e) => e.stopPropagation());
-
-  // 2. Click on dropzone container triggers file input
+  // 1. Native click is handled if dropzone is a <label for="file-upload-input">.
+  // We also add an explicit click listener fallback for maximum compatibility.
   dropzone.addEventListener('click', (e) => {
-    if (e.target !== fileInput) {
+    if (e.target !== fileInput && dropzone.tagName.toLowerCase() !== 'label') {
       fileInput.click();
     }
   });
 
-  // 3. Keyboard accessibility (Enter or Space triggers file input)
+  // 2. Keyboard accessibility (Enter or Space triggers file input)
   dropzone.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -203,7 +201,7 @@ function initDropzone() {
     }
   });
 
-  // 4. Drag & Drop state styling and handlers
+  // 3. Drag & Drop state styling and event handlers (prevent browser default open)
   const highlight = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -232,7 +230,7 @@ function initDropzone() {
     }
   });
 
-  // 5. File input change event
+  // 4. File input change event
   fileInput.addEventListener('change', (e) => {
     if (e.target.files && e.target.files.length > 0) {
       handleFileSelected(e.target.files[0]);
@@ -241,7 +239,7 @@ function initDropzone() {
 }
 
 function handleFileSelected(file) {
-  // Validate file
+  // 1. Validate file
   const check = validateMediaFile(file);
   if (!check.valid) {
     if (window.showToast) {
@@ -255,34 +253,57 @@ function handleFileSelected(file) {
   }
 
   pendingUploadFile = file;
+  const localBlobUrl = URL.createObjectURL(file);
+
   window.uploadedVideo = {
     id: `video_${Date.now()}`,
     file: file,
     name: file.name,
+    video_url: localBlobUrl,
     mimeType: file.type || 'video/mp4',
     duration: 0
   };
 
-  // Immediate UI feedback on dropzone
+  // 2. Immediate UI feedback on dropzone (Showing loading state)
   const dropzoneTitle = document.querySelector('#main-dropzone h3');
+  const dropzoneSub = document.querySelector('#main-dropzone p');
   if (dropzoneTitle) {
-    dropzoneTitle.innerHTML = `<span class="text-[#10B981]">✓ Selected:</span> ${file.name}`;
+    dropzoneTitle.innerHTML = `<span class="text-[#10B981] inline-flex items-center gap-1.5"><svg class="animate-spin h-4 w-4 text-[#10B981]" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Selected:</span> ${file.name}`;
+  }
+  if (dropzoneSub) {
+    dropzoneSub.textContent = 'Passing media to studio workspace...';
   }
 
-  // Populate Screen 2: Prepare Your Media Modal
+  if (window.showToast) {
+    window.showToast(`📁 Media loaded: ${file.name}`, false);
+  }
+
+  // 3. Construct project and immediately transition to Editor workspace
+  const newProject = {
+    id: `proj_${Date.now()}`,
+    title: file.name.replace(/\.[^/.]+$/, ""),
+    filename: file.name,
+    video_url: localBlobUrl,
+    file_path: '',
+    file: file,
+    created_at: "Just now",
+    language: "Hinglish",
+    duration: 15.0,
+    captions: [],
+    segments: [],
+    style: { ...TEMPLATES[0].style }
+  };
+
+  // Switch screen instantly to Studio Workspace
+  openStudioEditor(newProject);
+
+  // Automatically open Prepare Media modal in the studio for user to pick transcription language & start
   const modal = document.getElementById('modal-prepare-media');
   const previewName = document.getElementById('prepare-file-name');
   if (previewName) {
     const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
     previewName.textContent = `Selected: ${file.name} (${sizeMb} MB)`;
   }
-
-  // Show Toast feedback
-  if (window.showToast) {
-    window.showToast(`📁 Media loaded: ${file.name}`, false);
-  }
-
-  // Open Screen 2 Prepare Modal
   if (modal) {
     modal.classList.remove('hidden');
   }

@@ -159,20 +159,20 @@
       <!-- Dashboard Body -->
       <div class="p-8 max-w-6xl w-full mx-auto space-y-8">
         <!-- Big Upload Dropzone -->
-        <div id="main-dropzone" onclick="if(event.target.id!=='file-upload-input')document.getElementById('file-upload-input').click()" role="button" tabindex="0" class="dropzone-cyber p-12 flex flex-col items-center justify-center cursor-pointer group transition duration-300">
-          <input type="file" id="file-upload-input" accept="video/mp4,video/quicktime,video/webm,video/x-matroska,video/mov,audio/mp3,audio/mpeg,audio/wav,audio/m4a" onclick="event.stopPropagation()" class="hidden" style="display:none;">
-          <div class="w-18 h-18 rounded-2xl bg-[#10162A] border border-[#2B3952] group-hover:border-[#6366F1]/60 flex items-center justify-center text-[#94A3B8] group-hover:text-[#818CF8] mb-4 transition transform group-hover:scale-110 shadow-2xl p-4">
+        <label for="file-upload-input" id="main-dropzone" class="dropzone-cyber p-12 flex flex-col items-center justify-center cursor-pointer group transition duration-300 w-full block text-center">
+          <input type="file" id="file-upload-input" accept="video/mp4,video/quicktime,video/webm,video/x-matroska,video/mov,audio/mp3,audio/mpeg,audio/wav,audio/m4a" class="hidden" style="display:none;">
+          <div class="w-18 h-18 rounded-2xl bg-[#10162A] border border-[#2B3952] group-hover:border-[#6366F1]/60 flex items-center justify-center text-[#94A3B8] group-hover:text-[#818CF8] mb-4 transition transform group-hover:scale-110 shadow-2xl p-4 mx-auto">
             <svg class="w-9 h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
           </div>
           <h3 class="text-lg font-extrabold text-white mb-1.5 group-hover:text-[#818CF8] transition">Drop your video or audio here to auto-generate captions</h3>
           <p class="text-xs text-[#94A3B8] mb-3">AI Speech Transcription • Fast Millisecond Timestamps • 22+ Viral Templates</p>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center justify-center gap-2">
             <span class="px-2.5 py-1 rounded-full bg-[#6366F1]/15 text-[#A5B4FC] text-[10px] font-bold border border-[#6366F1]/30">MP4</span>
             <span class="px-2.5 py-1 rounded-full bg-[#06B6D4]/15 text-[#67E8F9] text-[10px] font-bold border border-[#06B6D4]/30">MOV (ProRes)</span>
             <span class="px-2.5 py-1 rounded-full bg-[#EC4899]/15 text-[#F472B6] text-[10px] font-bold border border-[#EC4899]/30">WebM</span>
             <span class="px-2.5 py-1 rounded-full bg-[#10B981]/15 text-[#6EE7B7] text-[10px] font-bold border border-[#10B981]/30">MP3 / WAV</span>
           </div>
-        </div>
+        </label>
 
         <!-- Recent Videos Section -->
         <div class="space-y-4">
