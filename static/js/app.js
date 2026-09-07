@@ -27,12 +27,12 @@ const DID_YOU_KNOW_TIPS = [
   "You can drag and position your captions anywhere on the video in real-time!"
 ];
 
-document.addEventListener('DOMContentLoaded', async () => {
+async function initApp() {
   initNavigation();
   initDropzone();
   initPrepareModal();
   initKeyboardShortcuts();
-  await loadRecentProjects();
+  try { await loadRecentProjects(); } catch (_) {}
 
   const urlParams = new URLSearchParams(window.location.search);
   const shouldOpenEditor = window.location.pathname === '/editor' || urlParams.get('editor') === '1' || window.location.hash === '#editor';
@@ -43,38 +43,49 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (data.projects && data.projects.length > 0) {
         openStudioEditor(data.projects[0]);
       } else {
-        openStudioEditor({
-          id: 'demo_proj',
-          title: "Viral Creator Demo",
-          filename: "demo_video.mp4",
-          video_url: "/static/assets/demo_video.mp4",
-          file_path: "",
-          created_at: "Demo",
-          language: "Hinglish",
-          duration: 14.5,
-          segments: [
-            {
-              id: 1,
-              start: 0,
-              end: 3.5,
-              text: "Create viral animated captions in seconds",
-              words: [
-                { word: "Create", start: 0, end: 0.5, highlight: false },
-                { word: "viral", start: 0.5, end: 1.1, highlight: true },
-                { word: "animated", start: 1.1, end: 1.8, highlight: true },
-                { word: "captions", start: 1.8, end: 2.6, highlight: false },
-                { word: "instantly", start: 2.6, end: 3.5, highlight: false }
-              ]
-            }
-          ],
-          style: { ...TEMPLATES[0].style }
-        });
+        openDefaultDemoEditor();
       }
     } catch(e) {
       console.warn("Editor init note:", e);
+      openDefaultDemoEditor();
     }
   }
-});
+}
+
+function openDefaultDemoEditor() {
+  openStudioEditor({
+    id: 'demo_proj',
+    title: "Viral Creator Demo",
+    filename: "demo_video.mp4",
+    video_url: "/static/assets/demo_video.mp4",
+    file_path: "",
+    created_at: "Demo",
+    language: "Hinglish",
+    duration: 14.5,
+    segments: [
+      {
+        id: 1,
+        start: 0,
+        end: 3.5,
+        text: "Create viral animated captions in seconds",
+        words: [
+          { word: "Create", start: 0, end: 0.5, highlight: true },
+          { word: "viral", start: 0.5, end: 1.1, highlight: false },
+          { word: "animated", start: 1.1, end: 1.8, highlight: false },
+          { word: "captions", start: 1.8, end: 2.6, highlight: false },
+          { word: "instantly", start: 2.6, end: 3.5, highlight: false }
+        ]
+      }
+    ],
+    style: { ...TEMPLATES[0].style }
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
 
 function initKeyboardShortcuts() {
   window.addEventListener('keydown', (e) => {
@@ -139,52 +150,142 @@ function showScreen(screenId) {
   if (target) target.classList.remove('hidden');
 }
 
+const ALLOWED_MEDIA_EXTENSIONS = ['.mp4', '.mov', '.webm', '.mkv', '.mp3', '.wav', '.m4a', '.aac', '.ogg', '.flac'];
+
+function validateMediaFile(file) {
+  if (!file) return { valid: false, error: 'No file selected.' };
+
+  const fileName = (file.name || '').toLowerCase();
+  const fileType = (file.type || '').toLowerCase();
+
+  const hasValidExt = ALLOWED_MEDIA_EXTENSIONS.some(ext => fileName.endsWith(ext));
+  const hasValidMime = fileType.startsWith('video/') || fileType.startsWith('audio/');
+
+  if (!hasValidExt && !hasValidMime) {
+    return {
+      valid: false,
+      error: `Unsupported file format "${file.name}". Please upload an MP4, MOV, WebM, MP3, or WAV file.`
+    };
+  }
+
+  // Max 500MB
+  if (file.size > 500 * 1024 * 1024) {
+    return {
+      valid: false,
+      error: 'File size exceeds 500MB limit. Please upload a smaller video clip.'
+    };
+  }
+
+  return { valid: true };
+}
+
 function initDropzone() {
   const dropzone = document.getElementById('main-dropzone');
   const fileInput = document.getElementById('file-upload-input');
 
   if (!dropzone || !fileInput) return;
 
-  dropzone.addEventListener('click', () => fileInput.click());
+  // 1. Prevent click event on fileInput from bubbling up to dropzone (fixes recursion/browser cancellation)
+  fileInput.addEventListener('click', (e) => e.stopPropagation());
 
-  dropzone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropzone.classList.add('dragover');
-  });
-
-  dropzone.addEventListener('dragleave', () => {
-    dropzone.classList.remove('dragover');
-  });
-
-  dropzone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropzone.classList.remove('dragover');
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelected(e.dataTransfer.files[0]);
+  // 2. Click on dropzone container triggers file input
+  dropzone.addEventListener('click', (e) => {
+    if (e.target !== fileInput) {
+      fileInput.click();
     }
   });
 
+  // 3. Keyboard accessibility (Enter or Space triggers file input)
+  dropzone.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      fileInput.click();
+    }
+  });
+
+  // 4. Drag & Drop state styling and handlers
+  const highlight = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropzone.classList.add('border-[#6366F1]', 'bg-[#10162A]/90', 'ring-4', 'ring-[#6366F1]/30', 'scale-[1.01]');
+  };
+
+  const unhighlight = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropzone.classList.remove('border-[#6366F1]', 'bg-[#10162A]/90', 'ring-4', 'ring-[#6366F1]/30', 'scale-[1.01]');
+  };
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropzone.addEventListener(eventName, highlight, false);
+  });
+
+  ['dragleave', 'dragend'].forEach(eventName => {
+    dropzone.addEventListener(eventName, unhighlight, false);
+  });
+
+  dropzone.addEventListener('drop', (e) => {
+    unhighlight(e);
+    const dt = e.dataTransfer;
+    if (dt && dt.files && dt.files.length > 0) {
+      handleFileSelected(dt.files[0]);
+    }
+  });
+
+  // 5. File input change event
   fileInput.addEventListener('change', (e) => {
-    if (e.target.files && e.target.files[0]) {
+    if (e.target.files && e.target.files.length > 0) {
       handleFileSelected(e.target.files[0]);
     }
   });
 }
 
 function handleFileSelected(file) {
+  // Validate file
+  const check = validateMediaFile(file);
+  if (!check.valid) {
+    if (window.showToast) {
+      window.showToast(check.error, true);
+    } else {
+      alert(check.error);
+    }
+    const fileInput = document.getElementById('file-upload-input');
+    if (fileInput) fileInput.value = '';
+    return;
+  }
+
   pendingUploadFile = file;
   window.uploadedVideo = {
     id: `video_${Date.now()}`,
     file: file,
     name: file.name,
-    mimeType: file.type,
+    mimeType: file.type || 'video/mp4',
     duration: 0
   };
-  // Open Screen 2: Prepare Your Media Modal
+
+  // Immediate UI feedback on dropzone
+  const dropzoneTitle = document.querySelector('#main-dropzone h3');
+  if (dropzoneTitle) {
+    dropzoneTitle.innerHTML = `<span class="text-[#10B981]">✓ Selected:</span> ${file.name}`;
+  }
+
+  // Populate Screen 2: Prepare Your Media Modal
   const modal = document.getElementById('modal-prepare-media');
   const previewName = document.getElementById('prepare-file-name');
-  if (previewName) previewName.textContent = `Selected: ${file.name}`;
-  if (modal) modal.classList.remove('hidden');
+  if (previewName) {
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+    previewName.textContent = `Selected: ${file.name} (${sizeMb} MB)`;
+  }
+
+  // Show Toast feedback
+  if (window.showToast) {
+    window.showToast(`📁 Media loaded: ${file.name}`, false);
+  }
+
+  // Open Screen 2 Prepare Modal
+  if (modal) {
+    modal.classList.remove('hidden');
+  }
 }
 
 function initPrepareModal() {
