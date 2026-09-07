@@ -1,0 +1,24 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ignore large binaries and generated files
+ffmpeg.exe
+ffprobe.exe
+*.zip
+tools/
+
+# Dynamic User Uploads & Rendered Exports
+uploads/*
+!uploads/.gitkeep
+exports/*
+!exports/.gitkeep
+
+# Environment / Local settings
+.env
+studio.db
+*.db
+.DS_Store
+Thumbs.db
+scratch/

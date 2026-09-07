@@ -1,0 +1,580 @@
+[
+  {
+    "id": "proj_1788506326182",
+    "title": "4 Sep E-Surfer Engineer's Day reel_gwr_video_mvp",
+    "filename": "4 Sep E-Surfer Engineer's Day reel_gwr_video_mvp.mp4",
+    "video_url": "/uploads/302b6386bf39_4 Sep E-Surfer Engineer's Day reel_gwr_video_mvp.mp4",
+    "file_path": "C:\\Users\\Abc\\Documents\\KalakarWebStudio\\uploads\\302b6386bf39_4 Sep E-Surfer Engineer's Day reel_gwr_video_mvp.mp4",
+    "created_at": "Just now",
+    "language": "Hinglish",
+    "duration": 34.048,
+    "segments": [
+      {
+        "id": 1,
+        "start": 0,
+        "end": 3.6,
+        "text": "Jab Shahar Ki Bhaagdor Aur Lnbhe Raaste Thkhaa Dete Hain,",
+        "words": [
+          {
+            "word": "Jab",
+            "start": 0,
+            "end": 0.3,
+            "highlight": false
+          },
+          {
+            "word": "Shahar",
+            "start": 0.3,
+            "end": 0.62,
+            "highlight": false
+          },
+          {
+            "word": "Ki",
+            "start": 0.62,
+            "end": 0.76,
+            "highlight": false
+          },
+          {
+            "word": "Bhaagdor",
+            "start": 0.76,
+            "end": 1.36,
+            "highlight": false
+          },
+          {
+            "word": "Aur",
+            "start": 1.36,
+            "end": 1.78,
+            "highlight": false
+          },
+          {
+            "word": "Lnbhe",
+            "start": 1.78,
+            "end": 2.14,
+            "highlight": false
+          },
+          {
+            "word": "Raaste",
+            "start": 2.14,
+            "end": 2.54,
+            "highlight": false
+          },
+          {
+            "word": "Thkhaa",
+            "start": 2.54,
+            "end": 2.84,
+            "highlight": false
+          },
+          {
+            "word": "Dete",
+            "start": 2.84,
+            "end": 3.18,
+            "highlight": false
+          },
+          {
+            "word": "Hain,",
+            "start": 3.18,
+            "end": 3.6,
+            "highlight": false
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "start": 3.78,
+        "end": 7.86,
+        "text": "Tab Hmen Tlaash Hoti Hai, Ek Aaraam Daayak, Aur Bahro Se Man Svaari Ki.",
+        "words": [
+          {
+            "word": "Tab",
+            "start": 3.78,
+            "end": 3.9,
+            "highlight": false
+          },
+          {
+            "word": "Hmen",
+            "start": 3.9,
+            "end": 4.18,
+            "highlight": false
+          },
+          {
+            "word": "Tlaash",
+            "start": 4.18,
+            "end": 4.54,
+            "highlight": false
+          },
+          {
+            "word": "Hoti",
+            "start": 4.54,
+            "end": 4.88,
+            "highlight": false
+          },
+          {
+            "word": "Hai,",
+            "start": 4.88,
+            "end": 5.06,
+            "highlight": false
+          },
+          {
+            "word": "Ek",
+            "start": 5.22,
+            "end": 5.42,
+            "highlight": false
+          },
+          {
+            "word": "Aaraam",
+            "start": 5.42,
+            "end": 5.84,
+            "highlight": false
+          },
+          {
+            "word": "Daayak,",
+            "start": 5.84,
+            "end": 6.2,
+            "highlight": false
+          },
+          {
+            "word": "Aur",
+            "start": 6.52,
+            "end": 6.62,
+            "highlight": false
+          },
+          {
+            "word": "Bahro",
+            "start": 6.62,
+            "end": 6.92,
+            "highlight": false
+          },
+          {
+            "word": "Se",
+            "start": 6.92,
+            "end": 7.12,
+            "highlight": false
+          },
+          {
+            "word": "Man",
+            "start": 7.12,
+            "end": 7.24,
+            "highlight": false
+          },
+          {
+            "word": "Svaari",
+            "start": 7.24,
+            "end": 7.7,
+            "highlight": false
+          },
+          {
+            "word": "Ki.",
+            "start": 7.7,
+            "end": 7.86,
+            "highlight": false
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "start": 8.24,
+        "end": 13.62,
+        "text": "Lekin Usmooth Safar Ke Peechhe Hoti Hai, Kisi Injeenyar Ki Soch, Mahanat Aur Inveshan.",
+        "words": [
+          {
+            "word": "Lekin",
+            "start": 8.24,
+            "end": 8.52,
+            "highlight": false
+          },
+          {
+            "word": "Usmooth",
+            "start": 8.52,
+            "end": 9.02,
+            "highlight": false
+          },
+          {
+            "word": "Safar",
+            "start": 9.02,
+            "end": 9.34,
+            "highlight": false
+          },
+          {
+            "word": "Ke",
+            "start": 9.34,
+            "end": 9.5,
+            "highlight": false
+          },
+          {
+            "word": "Peechhe",
+            "start": 9.5,
+            "end": 9.82,
+            "highlight": false
+          },
+          {
+            "word": "Hoti",
+            "start": 9.82,
+            "end": 10.12,
+            "highlight": false
+          },
+          {
+            "word": "Hai,",
+            "start": 10.12,
+            "end": 10.26,
+            "highlight": false
+          },
+          {
+            "word": "Kisi",
+            "start": 10.72,
+            "end": 10.96,
+            "highlight": false
+          },
+          {
+            "word": "Injeenyar",
+            "start": 10.96,
+            "end": 11.56,
+            "highlight": false
+          },
+          {
+            "word": "Ki",
+            "start": 11.56,
+            "end": 11.72,
+            "highlight": false
+          },
+          {
+            "word": "Soch,",
+            "start": 11.72,
+            "end": 12.08,
+            "highlight": false
+          },
+          {
+            "word": "Mahanat",
+            "start": 12.4,
+            "end": 12.76,
+            "highlight": false
+          },
+          {
+            "word": "Aur",
+            "start": 12.76,
+            "end": 13.04,
+            "highlight": false
+          },
+          {
+            "word": "Inveshan.",
+            "start": 13.04,
+            "end": 13.62,
+            "highlight": false
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "start": 13.62,
+        "end": 20.46,
+        "text": "Yonki Injeeniyar Sirf Gaari Aa Nahi Banate, Ve Ros Mrraa Ki Jingi Ko Aasan Aur Pryaavaran Ko Savach Banate Hai.",
+        "words": [
+          {
+            "word": "Yonki",
+            "start": 13.62,
+            "end": 14.32,
+            "highlight": false
+          },
+          {
+            "word": "Injeeniyar",
+            "start": 14.32,
+            "end": 14.88,
+            "highlight": false
+          },
+          {
+            "word": "Sirf",
+            "start": 14.88,
+            "end": 15.24,
+            "highlight": false
+          },
+          {
+            "word": "Gaari",
+            "start": 15.24,
+            "end": 15.56,
+            "highlight": false
+          },
+          {
+            "word": "Aa",
+            "start": 15.56,
+            "end": 15.62,
+            "highlight": false
+          },
+          {
+            "word": "Nahi",
+            "start": 15.62,
+            "end": 15.84,
+            "highlight": false
+          },
+          {
+            "word": "Banate,",
+            "start": 15.84,
+            "end": 16.2,
+            "highlight": false
+          },
+          {
+            "word": "Ve",
+            "start": 16.56,
+            "end": 16.76,
+            "highlight": false
+          },
+          {
+            "word": "Ros",
+            "start": 16.76,
+            "end": 17.04,
+            "highlight": false
+          },
+          {
+            "word": "Mrraa",
+            "start": 17.04,
+            "end": 17.32,
+            "highlight": false
+          },
+          {
+            "word": "Ki",
+            "start": 17.32,
+            "end": 17.5,
+            "highlight": false
+          },
+          {
+            "word": "Jingi",
+            "start": 17.5,
+            "end": 17.9,
+            "highlight": false
+          },
+          {
+            "word": "Ko",
+            "start": 17.9,
+            "end": 18.08,
+            "highlight": false
+          },
+          {
+            "word": "Aasan",
+            "start": 18.08,
+            "end": 18.56,
+            "highlight": false
+          },
+          {
+            "word": "Aur",
+            "start": 18.56,
+            "end": 18.8,
+            "highlight": false
+          },
+          {
+            "word": "Pryaavaran",
+            "start": 18.8,
+            "end": 19.34,
+            "highlight": false
+          },
+          {
+            "word": "Ko",
+            "start": 19.34,
+            "end": 19.54,
+            "highlight": false
+          },
+          {
+            "word": "Savach",
+            "start": 19.54,
+            "end": 19.88,
+            "highlight": false
+          },
+          {
+            "word": "Banate",
+            "start": 19.88,
+            "end": 20.32,
+            "highlight": false
+          },
+          {
+            "word": "Hai.",
+            "start": 20.32,
+            "end": 20.46,
+            "highlight": false
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "start": 20.72,
+        "end": 24.86,
+        "text": "Is Injeeniyar Sdi Ejrfar Ki Aur Se Un Sbhi Injeeniyar Ko Slaam,",
+        "words": [
+          {
+            "word": "Is",
+            "start": 20.72,
+            "end": 20.88,
+            "highlight": false
+          },
+          {
+            "word": "Injeeniyar",
+            "start": 20.88,
+            "end": 21.46,
+            "highlight": false
+          },
+          {
+            "word": "Sdi",
+            "start": 21.46,
+            "end": 21.98,
+            "highlight": false
+          },
+          {
+            "word": "Ejrfar",
+            "start": 21.98,
+            "end": 22.52,
+            "highlight": false
+          },
+          {
+            "word": "Ki",
+            "start": 22.52,
+            "end": 22.68,
+            "highlight": false
+          },
+          {
+            "word": "Aur",
+            "start": 22.68,
+            "end": 22.92,
+            "highlight": false
+          },
+          {
+            "word": "Se",
+            "start": 22.92,
+            "end": 23.16,
+            "highlight": false
+          },
+          {
+            "word": "Un",
+            "start": 23.16,
+            "end": 23.34,
+            "highlight": false
+          },
+          {
+            "word": "Sbhi",
+            "start": 23.34,
+            "end": 23.7,
+            "highlight": false
+          },
+          {
+            "word": "Injeeniyar",
+            "start": 23.7,
+            "end": 24.22,
+            "highlight": false
+          },
+          {
+            "word": "Ko",
+            "start": 24.22,
+            "end": 24.44,
+            "highlight": false
+          },
+          {
+            "word": "Slaam,",
+            "start": 24.44,
+            "end": 24.86,
+            "highlight": false
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "start": 24.86,
+        "end": 28.76,
+        "text": "Yo Apne Invoveshan Se Bhaarat Ki Tarki Ko Nahi Rftaar De Rahi Hai.",
+        "words": [
+          {
+            "word": "Yo",
+            "start": 24.86,
+            "end": 25.26,
+            "highlight": false
+          },
+          {
+            "word": "Apne",
+            "start": 25.26,
+            "end": 25.62,
+            "highlight": false
+          },
+          {
+            "word": "Invoveshan",
+            "start": 25.62,
+            "end": 26.16,
+            "highlight": false
+          },
+          {
+            "word": "Se",
+            "start": 26.16,
+            "end": 26.36,
+            "highlight": false
+          },
+          {
+            "word": "Bhaarat",
+            "start": 26.36,
+            "end": 26.78,
+            "highlight": false
+          },
+          {
+            "word": "Ki",
+            "start": 26.78,
+            "end": 26.92,
+            "highlight": false
+          },
+          {
+            "word": "Tarki",
+            "start": 26.92,
+            "end": 27.32,
+            "highlight": false
+          },
+          {
+            "word": "Ko",
+            "start": 27.32,
+            "end": 27.5,
+            "highlight": false
+          },
+          {
+            "word": "Nahi",
+            "start": 27.5,
+            "end": 27.82,
+            "highlight": false
+          },
+          {
+            "word": "Rftaar",
+            "start": 27.82,
+            "end": 28.26,
+            "highlight": false
+          },
+          {
+            "word": "De",
+            "start": 28.26,
+            "end": 28.38,
+            "highlight": false
+          },
+          {
+            "word": "Rahi",
+            "start": 28.38,
+            "end": 28.62,
+            "highlight": false
+          },
+          {
+            "word": "Hai.",
+            "start": 28.62,
+            "end": 28.76,
+            "highlight": false
+          }
+        ]
+      }
+    ],
+    "style": {
+      "fontFamily": "Montserrat",
+      "fontWeight": "900",
+      "fontSize": 34,
+      "textTransform": "uppercase",
+      "textAlign": "center",
+      "posX": 50,
+      "posY": 80,
+      "color": "#FFFFFF",
+      "highlightColor": "#FFE600",
+      "strokeWidth": 2.5,
+      "strokeColor": "#000000",
+      "shadow": true,
+      "shadowColor": "rgba(0,0,0,0.95)",
+      "bgBox": false,
+      "bgColor": "transparent",
+      "animation": "pop",
+      "activeScale": 1.15,
+      "displayMode": "chunk"
+    }
+  }
+]

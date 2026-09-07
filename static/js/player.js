@@ -1,0 +1,510 @@
+// Harsh Caption Generator - Multi-Clip Video Player & Synchronized Live Caption Overlay Engine
+// Adheres strictly to the single-source-of-truth Timeline and Caption data model
+
+class KalakarPlayer {
+  constructor(videoElement, captionOverlayElement, safeZoneElement) {
+    this.video = videoElement;
+    this.captionOverlay = captionOverlayElement;
+    this.safeZone = safeZoneElement;
+    
+    this.currentStyle = { ...TEMPLATES[0].style };
+    this.displayMode = 'chunk'; // 'chunk' (2-3 words), 'single' (1 word pop), 'full' (full line)
+    this.currentTime = 0;
+    this.duration = 15.0;
+    this.isPlaying = false;
+    this.isDragging = false;
+    this.aspectRatio = '9:16';
+    this.animFrameId = null;
+    this._eventsBound = false;
+    
+    this.initEvents();
+    this.initAspectRatioControls();
+  }
+
+  loadVideo(videoSrc) {
+    if (!this.video) return;
+    this.stopPlaybackLoop();
+    this.video.pause();
+    this.isPlaying = false;
+    this.updatePlayBtn();
+    
+    if (videoSrc) {
+      this.video.src = videoSrc;
+      this.video.load();
+    }
+  }
+
+  // Legacy segments bridge
+  setSegments(segments) {
+    if (window.kalakarTimeline) {
+      window.kalakarTimeline.setCaptions(segments);
+    }
+    this.render();
+  }
+
+  get segments() {
+    return window.kalakarTimeline ? window.kalakarTimeline.timeline.captions : [];
+  }
+
+  setStyle(style) {
+    this.currentStyle = { ...this.currentStyle, ...style };
+    if (style.displayMode) this.displayMode = style.displayMode;
+    this.applyOverlayStyle();
+    this.render();
+  }
+
+  // ─── TIMELINE <-> SOURCE TIME MAPPING ENGINE ──────────────────────────
+
+  timelineToSourceTime(timelineTime) {
+    const clips = window.kalakarTimeline ? window.kalakarTimeline.timeline.videoClips : [];
+    if (!clips || clips.length === 0) {
+      return { clip: null, sourceTime: timelineTime };
+    }
+
+    // Find clip containing timelineTime
+    let targetClip = clips.find(c => timelineTime >= c.timelineStartTime && timelineTime < c.timelineEndTime);
+    if (!targetClip) {
+      // If at or beyond end of timeline, use last clip
+      targetClip = clips[clips.length - 1];
+    }
+
+    const offset = Math.max(0, timelineTime - targetClip.timelineStartTime);
+    const sourceTime = Math.min(targetClip.sourceEndTime, targetClip.sourceStartTime + offset);
+    return { clip: targetClip, sourceTime };
+  }
+
+  sourceToTimelineTime(sourceTime, clip) {
+    if (!clip) return sourceTime;
+    const offset = Math.max(0, sourceTime - clip.sourceStartTime);
+    return clip.timelineStartTime + offset;
+  }
+
+  getCurrentClip() {
+    const clips = window.kalakarTimeline ? window.kalakarTimeline.timeline.videoClips : [];
+    if (!clips || clips.length === 0) return null;
+    return clips.find(c => this.currentTime >= c.timelineStartTime && this.currentTime <= c.timelineEndTime) || clips[0];
+  }
+
+  // ─── PLAYBACK & SEEKING CONTROLS ─────────────────────────────────────
+
+  initEvents() {
+    if (this._eventsBound) return;
+    this._eventsBound = true;
+
+    const updateDur = () => {
+      const vidDur = this.video ? this.video.duration : 0;
+      if (vidDur && !isNaN(vidDur) && vidDur > 0 && isFinite(vidDur)) {
+        if (window.kalakarTimeline) {
+          window.kalakarTimeline.setDuration(vidDur);
+        }
+        this.duration = window.kalakarTimeline ? window.kalakarTimeline.timeline.duration : vidDur;
+        this.updateTimeDisplay();
+        if (window.currentProject) {
+          window.currentProject.duration = this.duration;
+        }
+      }
+      if (this.video && this.video.videoWidth && this.video.videoHeight) {
+        const ratio = this.video.videoWidth / this.video.videoHeight;
+        if (ratio > 1.3) {
+          this.setAspectRatio('16:9');
+        } else if (ratio >= 0.85 && ratio <= 1.15) {
+          this.setAspectRatio('1:1');
+        } else {
+          this.setAspectRatio('9:16');
+        }
+      }
+    };
+
+    if (this.video) {
+      this.video.addEventListener('loadedmetadata', updateDur);
+      this.video.addEventListener('durationchange', updateDur);
+      this.video.addEventListener('canplay', updateDur);
+      this.video.addEventListener('canplaythrough', updateDur);
+      this.video.addEventListener('loadeddata', updateDur);
+
+      this.video.addEventListener('play', () => {
+        this.isPlaying = true;
+        this.updatePlayBtn();
+        this.startPlaybackLoop();
+      });
+
+      this.video.addEventListener('pause', () => {
+        this.isPlaying = false;
+        this.stopPlaybackLoop();
+        this.updatePlayBtn();
+        this.render();
+      });
+
+      this.video.addEventListener('ended', () => {
+        this.isPlaying = false;
+        this.stopPlaybackLoop();
+        this.updatePlayBtn();
+      });
+    }
+
+    // Click on player container to toggle play/pause
+    const frame = document.getElementById('player-frame');
+    if (frame) {
+      frame.addEventListener('click', (e) => {
+        if (this.isDragging) return;
+        if (e.target === this.captionOverlay || this.captionOverlay?.contains(e.target)) return;
+        this.togglePlay();
+      });
+    }
+
+    // Draggable caption overlay
+    if (this.captionOverlay) {
+      this.captionOverlay.addEventListener('mousedown', (e) => {
+        this.isDragging = true;
+        this.captionOverlay.classList.add('dragging');
+        e.stopPropagation();
+      });
+    }
+
+    window.addEventListener('mousemove', (e) => {
+      if (!this.isDragging) return;
+      const f = document.getElementById('player-frame') || this.video?.parentElement;
+      if (!f) return;
+
+      const rect = f.getBoundingClientRect();
+      let percentX = ((e.clientX - rect.left) / rect.width) * 100;
+      let percentY = ((e.clientY - rect.top) / rect.height) * 100;
+
+      percentX = Math.max(8, Math.min(92, percentX));
+      percentY = Math.max(8, Math.min(92, percentY));
+
+      this.currentStyle.posX = Math.round(percentX * 10) / 10;
+      this.currentStyle.posY = Math.round(percentY * 10) / 10;
+
+      this.applyOverlayStyle();
+      if (window.kalakarEditor) {
+        window.kalakarEditor.updatePositionInputs(this.currentStyle.posX, this.currentStyle.posY);
+      }
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (this.isDragging) {
+        setTimeout(() => { this.isDragging = false; }, 50);
+        this.captionOverlay?.classList.remove('dragging');
+      }
+    });
+  }
+
+  startPlaybackLoop() {
+    this.stopPlaybackLoop();
+
+    const loop = () => {
+      if (!this.isPlaying) return;
+
+      if (this.video && window.kalakarTimeline) {
+        const clips = window.kalakarTimeline.timeline.videoClips || [];
+        const currentClip = this.getCurrentClip();
+
+        if (currentClip) {
+          // Check if video reached the end of the current clip
+          if (this.video.currentTime >= (currentClip.sourceEndTime - 0.04)) {
+            const clipIdx = clips.findIndex(c => c.id === currentClip.id);
+            const nextClip = clips[clipIdx + 1];
+
+            if (nextClip) {
+              // Seamlessly jump to next clip's source start
+              this.video.currentTime = nextClip.sourceStartTime;
+              this.currentTime = nextClip.timelineStartTime;
+              window.kalakarTimeline.setCurrentTime(this.currentTime);
+            } else {
+              // Reached end of entire timeline
+              this.video.pause();
+              this.isPlaying = false;
+              this.updatePlayBtn();
+              this.currentTime = window.kalakarTimeline.timeline.duration;
+              window.kalakarTimeline.setCurrentTime(this.currentTime);
+              this.updateTimeDisplay();
+              this.render();
+              return;
+            }
+          } else {
+            // Normal in-clip progression
+            const newTimelineTime = this.sourceToTimelineTime(this.video.currentTime, currentClip);
+            this.currentTime = newTimelineTime;
+            window.kalakarTimeline.setCurrentTime(this.currentTime);
+          }
+        }
+
+        this.render();
+        this.updateTimeDisplay();
+      }
+
+      this.animFrameId = requestAnimationFrame(loop);
+    };
+
+    this.animFrameId = requestAnimationFrame(loop);
+  }
+
+  stopPlaybackLoop() {
+    if (this.animFrameId) {
+      cancelAnimationFrame(this.animFrameId);
+      this.animFrameId = null;
+    }
+  }
+
+  togglePlay() {
+    if (!this.video) return;
+    if (!this.video.src && window.currentProject?.video_url) {
+      this.video.src = window.currentProject.video_url;
+      this.video.load();
+    }
+
+    if (this.video.paused || this.video.ended) {
+      const maxDur = window.kalakarTimeline ? window.kalakarTimeline.timeline.duration : (this.duration || 15);
+      if (this.video.ended || (this.currentTime >= maxDur - 0.05)) {
+        this.seek(0);
+      }
+      const p = this.video.play();
+      if (p !== undefined) {
+        p.then(() => {
+          this.isPlaying = true;
+          this.updatePlayBtn();
+          this.startPlaybackLoop();
+        }).catch(e => {
+          console.warn("Video play error:", e);
+          this.isPlaying = false;
+          this.updatePlayBtn();
+        });
+      }
+    } else {
+      this.video.pause();
+      this.isPlaying = false;
+      this.stopPlaybackLoop();
+      this.updatePlayBtn();
+    }
+  }
+
+  seek(timelineTime) {
+    if (!this.video) return;
+
+    const totalDur = window.kalakarTimeline ? window.kalakarTimeline.timeline.duration : (this.duration || 15);
+    const clampedTimeline = Math.max(0, Math.min(totalDur, timelineTime));
+
+    const { clip, sourceTime } = this.timelineToSourceTime(clampedTimeline);
+    this.video.currentTime = sourceTime;
+    this.currentTime = clampedTimeline;
+
+    if (window.kalakarTimeline) {
+      window.kalakarTimeline.setCurrentTime(clampedTimeline);
+    }
+
+    this.render();
+    this.updateTimeDisplay();
+  }
+
+  // ─── ASPECT RATIO & SAFE ZONE ─────────────────────────────────────────
+
+  initAspectRatioControls() {
+    const btn916 = document.getElementById('btn-aspect-9-16');
+    const btn169 = document.getElementById('btn-aspect-16-9');
+    const btn11 = document.getElementById('btn-aspect-1-1');
+
+    if (btn916) btn916.addEventListener('click', () => this.setAspectRatio('9:16'));
+    if (btn169) btn169.addEventListener('click', () => this.setAspectRatio('16:9'));
+    if (btn11) btn11.addEventListener('click', () => this.setAspectRatio('1:1'));
+  }
+
+  setAspectRatio(ratio) {
+    const frame = document.getElementById('player-frame');
+    const btn916 = document.getElementById('btn-aspect-9-16');
+    const btn169 = document.getElementById('btn-aspect-16-9');
+    const btn11 = document.getElementById('btn-aspect-1-1');
+
+    this.aspectRatio = ratio;
+
+    const inactiveClass = 'px-2.5 py-1 text-[11px] font-medium text-[#9CA3AF] hover:text-white rounded-lg transition';
+    const activeClass = 'px-2.5 py-1 text-[11px] font-bold rounded-lg bg-[#6366F1] text-white transition shadow-[0_0_10px_rgba(99,102,241,0.5)]';
+
+    if (btn916) btn916.className = ratio === '9:16' ? activeClass : inactiveClass;
+    if (btn169) btn169.className = ratio === '16:9' ? activeClass : inactiveClass;
+    if (btn11) btn11.className = ratio === '1:1' ? activeClass : inactiveClass;
+
+    if (!frame) return;
+
+    if (ratio === '16:9') {
+      frame.style.aspectRatio = '16/9';
+      frame.style.width = '88%';
+      frame.style.maxHeight = '65vh';
+    } else if (ratio === '1:1') {
+      frame.style.aspectRatio = '1/1';
+      frame.style.width = 'auto';
+      frame.style.maxHeight = '65vh';
+    } else {
+      frame.style.aspectRatio = '9/16';
+      frame.style.width = 'auto';
+      frame.style.maxHeight = '72vh';
+    }
+    this.render();
+  }
+
+  toggleSafeZone(visible) {
+    if (!this.safeZone) return;
+    if (visible) {
+      this.safeZone.classList.remove('hidden');
+    } else {
+      this.safeZone.classList.add('hidden');
+    }
+  }
+
+  applyOverlayStyle() {
+    if (!this.captionOverlay) return;
+    const s = this.currentStyle;
+    this.captionOverlay.style.left = `${s.posX}%`;
+    this.captionOverlay.style.top = `${s.posY}%`;
+    this.captionOverlay.style.fontFamily = s.fontFamily || 'Montserrat';
+    this.captionOverlay.style.fontWeight = s.fontWeight || '900';
+    this.captionOverlay.style.fontSize = `${s.fontSize || 32}px`;
+    this.captionOverlay.style.textAlign = s.textAlign || 'center';
+    this.captionOverlay.style.textTransform = (s.textTransform !== undefined) ? s.textTransform : 'uppercase';
+    this.captionOverlay.style.color = s.color || '#FFFFFF';
+    this.captionOverlay.style.paintOrder = 'stroke fill markers';
+
+    if (this.displayMode === 'full') {
+      this.captionOverlay.classList.add('mode-full');
+      this.captionOverlay.style.whiteSpace = 'normal';
+      this.captionOverlay.style.flexWrap = 'wrap';
+    } else {
+      this.captionOverlay.classList.remove('mode-full');
+      this.captionOverlay.style.whiteSpace = 'nowrap';
+      this.captionOverlay.style.flexWrap = 'nowrap';
+    }
+
+    if (s.bgBox) {
+      this.captionOverlay.style.backgroundColor = s.bgColor || 'rgba(0,0,0,0.75)';
+      this.captionOverlay.style.padding = '8px 18px';
+      this.captionOverlay.style.borderRadius = '10px';
+    } else {
+      this.captionOverlay.style.backgroundColor = 'transparent';
+      this.captionOverlay.style.padding = '6px 12px';
+    }
+
+    if (s.strokeWidth > 0) {
+      const strokePx = Math.min(s.strokeWidth, 2.5);
+      this.captionOverlay.style.webkitTextStroke = `${strokePx}px ${s.strokeColor || '#000000'}`;
+    } else {
+      this.captionOverlay.style.webkitTextStroke = '0px transparent';
+    }
+
+    if (s.shadow) {
+      this.captionOverlay.style.textShadow = `0 3px 6px rgba(0,0,0,0.9), 0 0 2px #000, 0 1px 3px rgba(0,0,0,0.8)`;
+    } else {
+      this.captionOverlay.style.textShadow = 'none';
+    }
+  }
+
+  // ─── SYNCHRONIZED CAPTION OVERLAY RENDERING ───────────────────────────
+
+  render() {
+    if (!this.captionOverlay) return;
+    const now = this.currentTime;
+
+    const captions = window.kalakarTimeline ? window.kalakarTimeline.timeline.captions : [];
+    
+    // Find active caption strictly by authoritative numeric startTime & endTime
+    const activeCap = captions.find(c => now >= (c.startTime - 0.03) && now <= (c.endTime + 0.05));
+
+    const activeCapId = activeCap ? activeCap.id : null;
+    if (this._lastCapId !== activeCapId) {
+      this._lastCapId = activeCapId;
+      if (window.kalakarEditor && typeof window.kalakarEditor.highlightTranscriptItem === 'function') {
+        window.kalakarEditor.highlightTranscriptItem(activeCapId);
+      }
+    }
+
+    if (!activeCap) {
+      this.captionOverlay.innerHTML = '';
+      this.captionOverlay.style.opacity = '0';
+      return;
+    }
+
+    this.captionOverlay.style.opacity = '1';
+    const s = this.currentStyle;
+
+    // Split caption text into words for natural horizontal rendering
+    const rawWords = activeCap.text.split(/\s+/).filter(Boolean);
+    if (rawWords.length === 0) {
+      this.captionOverlay.innerHTML = '';
+      return;
+    }
+
+    const capDur = Math.max(0.1, activeCap.endTime - activeCap.startTime);
+    const wordDur = capDur / rawWords.length;
+    const words = rawWords.map((w, i) => ({
+      word: w,
+      start: activeCap.startTime + (i * wordDur),
+      end: activeCap.startTime + ((i + 1) * wordDur)
+    }));
+
+    let visibleWords = [];
+
+    if (this.displayMode === 'single') {
+      // 1 Word Mode: Show exactly ONE word at a time, strictly centered
+      const activeWord = words.find(w => now >= (w.start - 0.02) && now <= (w.end + 0.05));
+      visibleWords = [activeWord || words[0]];
+    } else if (this.displayMode === 'full') {
+      // Full Line Mode: Show entire sentence horizontally
+      visibleWords = words;
+    } else {
+      // 2-3 Words Mode (default chunk): Display 2-3 words together horizontally side by side
+      const chunkSize = 3;
+      const activeWordIdx = words.findIndex(w => now >= (w.start - 0.02) && now <= (w.end + 0.05));
+      let chunkStart = 0;
+      if (activeWordIdx >= 0) {
+        chunkStart = Math.floor(activeWordIdx / chunkSize) * chunkSize;
+      }
+      visibleWords = words.slice(chunkStart, chunkStart + chunkSize);
+    }
+
+    // Render words in a clean single horizontal row with uniform spacing
+    let html = '';
+    const animType = s.animation || 'pop';
+    visibleWords.forEach(w => {
+      const isWordActive = (now >= (w.start - 0.02) && now <= (w.end + 0.05));
+      let wordStyle = 'display: inline-flex; align-items: center; margin: 0 5px; vertical-align: middle; paint-order: stroke fill markers;';
+      let wordClass = 'word-span';
+
+      if (isWordActive) {
+        wordClass += ` active anim-${animType}`;
+        const hlColor = s.highlightColor || '#FFE600';
+        wordStyle += `color: ${hlColor}; font-weight: 900; filter: drop-shadow(0 0 10px ${hlColor});`;
+      } else {
+        wordStyle += `color: ${s.color || '#FFFFFF'};`;
+      }
+
+      html += `<span class="${wordClass}" style="${wordStyle}">${w.word}</span>`;
+    });
+
+    this.captionOverlay.innerHTML = html;
+  }
+
+  updatePlayBtn() {
+    const playIcon = document.getElementById('player-play-icon');
+    if (playIcon) {
+      playIcon.innerHTML = this.isPlaying 
+        ? `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`
+        : `<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
+    }
+  }
+
+  updateTimeDisplay() {
+    const el = document.getElementById('player-time-display');
+    if (el) {
+      const formatTime = (secs) => {
+        if (!secs || isNaN(secs) || secs < 0) secs = 0;
+        const m = Math.floor(secs / 60);
+        const s = Math.floor(secs % 60);
+        const ms = Math.floor((secs % 1) * 100);
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}:${String(ms).padStart(2, '0')}`;
+      };
+      const totalDur = window.kalakarTimeline ? window.kalakarTimeline.timeline.duration : (this.duration || 15);
+      el.textContent = `${formatTime(this.currentTime)} / ${formatTime(totalDur)}`;
+    }
+  }
+}
+
+window.KalakarPlayer = KalakarPlayer;
