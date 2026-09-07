@@ -34,46 +34,23 @@ async function initApp() {
   initKeyboardShortcuts();
   try { await loadRecentProjects(); } catch (_) {}
 
+  // App must always start on and stay on the upload/dashboard screen
+  showScreen('screen-dashboard');
+
+  // Guard against premature navigation:
+  // ONLY open the editor on load if an explicit project ID query param is present AND contains a valid media file
   const urlParams = new URLSearchParams(window.location.search);
-  const shouldOpenEditor = window.location.pathname === '/editor' || urlParams.get('editor') === '1' || window.location.hash === '#editor';
-  if (shouldOpenEditor) {
+  const requestedProjId = urlParams.get('project') || urlParams.get('id');
+  if (requestedProjId) {
     try {
-      let opened = false;
-      try {
-        const res = await fetch(API_BASE + '/api/projects');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.projects && data.projects.length > 0) {
-            openStudioEditor(data.projects[0]);
-            opened = true;
-          }
+      const savedProj = localStorage.getItem('harsh_project_' + requestedProjId);
+      if (savedProj) {
+        const p = JSON.parse(savedProj);
+        if (p && (p.file || (p.video_url && !p.video_url.includes('demo_video.mp4')))) {
+          openStudioEditor(p);
         }
-      } catch(_) {}
-
-      if (!opened) {
-        // Check localStorage projects
-        try {
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith('harsh_project_')) {
-              const item = JSON.parse(localStorage.getItem(key));
-              if (item) {
-                openStudioEditor(item);
-                opened = true;
-                break;
-              }
-            }
-          }
-        } catch(_) {}
       }
-
-      if (!opened) {
-        openDefaultDemoEditor();
-      }
-    } catch(e) {
-      console.warn("Editor init note:", e);
-      openDefaultDemoEditor();
-    }
+    } catch (_) {}
   }
 }
 
@@ -170,6 +147,19 @@ function initNavigation() {
 }
 
 function showScreen(screenId) {
+  // Navigation Guard: Prevent showing editor unless an active video file exists in state
+  if (screenId === 'screen-studio') {
+    const hasActiveMedia = Boolean(
+      (currentProject && (currentProject.file || (currentProject.video_url && !currentProject.video_url.includes('demo_video.mp4')))) ||
+      (window.uploadedVideo && (window.uploadedVideo.file || (window.uploadedVideo.video_url && !window.uploadedVideo.video_url.includes('demo_video.mp4'))))
+    );
+
+    if (!hasActiveMedia) {
+      console.warn("[Navigation Guard] Access to Editor denied without an uploaded video. Staying on dashboard.");
+      screenId = 'screen-dashboard';
+    }
+  }
+
   document.querySelectorAll('.app-screen').forEach(s => {
     s.classList.add('hidden');
     s.style.setProperty('display', 'none', 'important');
@@ -475,6 +465,8 @@ async function startUploadAndTranscription(file, options) {
       formData.append('filename', uploadData.filename || '');
       formData.append('language', options.language || 'hi');
       formData.append('script', options.script || 'roman');
+      const isHinglish = (options.language === 'hi' && options.script === 'roman') || options.language === 'hinglish';
+      formData.append('hinglish', String(isHinglish));
       formData.append('audio_enhance', String(options.audioEnhance ?? true));
       formData.append('emojis', String(options.emojis ?? true));
       formData.append('translate', String(options.translate ?? false));
@@ -561,9 +553,25 @@ async function startUploadAndTranscription(file, options) {
 }
 
 function openStudioEditor(project) {
-  if (project && !project.file && window.uploadedVideo?.file) {
+  if (!project) {
+    showScreen('screen-dashboard');
+    return;
+  }
+  if (!project.file && window.uploadedVideo?.file) {
     project.file = window.uploadedVideo.file;
   }
+  if (!project.video_url && window.uploadedVideo?.video_url) {
+    project.video_url = window.uploadedVideo.video_url;
+  }
+
+  const hasMedia = Boolean(project.file || (project.video_url && !project.video_url.includes('demo_video.mp4')));
+  if (!hasMedia) {
+    console.warn("[Studio Guard] Cannot open Editor: No video file in state. Please upload a video first.");
+    if (window.showToast) window.showToast("Please select or drop a video file first.", true);
+    showScreen('screen-dashboard');
+    return;
+  }
+
   currentProject = project;
   window.currentProject = project;
 
