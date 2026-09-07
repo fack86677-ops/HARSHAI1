@@ -6,7 +6,9 @@
     { "source": "/editor", "destination": "/editor.html" },
     { "source": "/dashboard", "destination": "/dashboard.html" },
     { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/pricing", "destination": "/pricing.html" }
+    { "source": "/pricing", "destination": "/pricing.html" },
+    { "source": "/checkout", "destination": "/pricing.html" },
+    { "source": "/payment", "destination": "/pricing.html" }
   ],
   "headers": [
     {
