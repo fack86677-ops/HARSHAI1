@@ -238,6 +238,24 @@ class KalakarTimeline {
 
       if (!textVal) return; // Disallow empty caption text
 
+      // Preserve or generate word-level timings
+      let capWords = Array.isArray(c.words) ? c.words.map(w => ({
+        word: String(w.word || '').trim(),
+        start: typeof w.start === 'number' ? Math.round(w.start * 1000) / 1000 : Math.round(sTime * 1000) / 1000,
+        end: typeof w.end === 'number' ? Math.round(w.end * 1000) / 1000 : Math.round(eTime * 1000) / 1000
+      })).filter(w => w.word.length > 0) : [];
+
+      if (capWords.length === 0 && textVal.length > 0) {
+        const tokens = textVal.split(/\s+/).filter(Boolean);
+        const dur = Math.max(0.1, eTime - sTime);
+        const wDur = dur / Math.max(1, tokens.length);
+        capWords = tokens.map((tok, i) => ({
+          word: tok,
+          start: Math.round((sTime + (i * wDur)) * 1000) / 1000,
+          end: Math.round((sTime + ((i + 1) * wDur)) * 1000) / 1000
+        }));
+      }
+
       const captionObj = {
         id: c.id ? String(c.id) : `caption_${String(idx + 1).padStart(3, '0')}`,
         text: textVal,
@@ -247,7 +265,8 @@ class KalakarTimeline {
         language: c.language || 'hinglish',
         confidence: typeof c.confidence === 'number' ? c.confidence : 0.94,
         videoClipId: c.videoClipId || fallbackClipId,
-        isEdited: Boolean(c.isEdited)
+        isEdited: Boolean(c.isEdited),
+        words: capWords
       };
 
       // Caption validation rules
@@ -673,158 +692,291 @@ class KalakarTimeline {
     });
   }
 
-  // ─── CAPTION TRACK RENDERING (AUTHORITATIVE NUMERIC TIMING) ───────────
+  // ─── CAPTION TRACK RENDERING (WORD-LEVEL BLOCKS & LINE BLOCKS) ───────────
 
   renderCaptionBlocks() {
     if (!this.captionsTrackEl) return;
     this.captionsTrackEl.innerHTML = '';
 
-    this.timeline.captions.forEach(caption => {
-      // Authoritative position derived directly from numeric startTime & endTime
-      const startX = (caption.startTime * this.pixelsPerSecond * this.zoom);
-      const blockWidth = Math.max(30, ((caption.endTime - caption.startTime) * this.pixelsPerSecond * this.zoom) - 3);
+    if (this.mode === 'word') {
+      // ─── 1. WORD-LEVEL BLOCKS (INDIVIDUAL SLEEK BLOCKS PER WORD) ───
+      this.timeline.captions.forEach((caption) => {
+        const words = (caption.words && caption.words.length > 0)
+          ? caption.words
+          : caption.text.split(/\s+/).filter(Boolean).map((w, i, arr) => {
+              const dur = Math.max(0.1, caption.endTime - caption.startTime);
+              const wd = dur / arr.length;
+              return {
+                word: w,
+                start: Math.round((caption.startTime + (i * wd)) * 1000) / 1000,
+                end: Math.round((caption.startTime + ((i + 1) * wd)) * 1000) / 1000
+              };
+            });
 
-      const block = document.createElement('div');
-      block.className = 'caption-block flex items-center justify-between group/block relative select-none';
-      block.style.left = `${startX}px`;
-      block.style.width = `${blockWidth}px`;
-      block.dataset.captionId = caption.id;
-      block.dataset.start = String(caption.startTime);
-      block.dataset.end = String(caption.endTime);
-      block.title = `${caption.text}\n(${caption.startTime.toFixed(2)}s - ${caption.endTime.toFixed(2)}s) [Clip: ${caption.videoClipId}]\n• Drag block to adjust timing\n• Drag edges to trim\n• Double click to edit`;
+        words.forEach((w, wIdx) => {
+          const startX = (w.start * this.pixelsPerSecond * this.zoom);
+          const blockWidth = Math.max(26, ((w.end - w.start) * this.pixelsPerSecond * this.zoom) - 2);
 
-      // Trim Left Handle
-      const leftHandle = document.createElement('div');
-      leftHandle.className = 'absolute left-0 top-0 bottom-0 w-2.5 cursor-ew-resize hover:bg-[#6366F1] bg-[#6366F1]/50 opacity-0 group-hover/block:opacity-100 transition z-20 rounded-l';
+          const block = document.createElement('div');
+          block.className = 'timeline-word-block caption-block flex items-center justify-between group/word relative select-none rounded bg-[#4F46E5]/35 hover:bg-[#6366F1] border border-[#818CF8]/40 hover:border-[#818CF8] text-white transition-all cursor-pointer shadow-sm';
+          block.style.position = 'absolute';
+          block.style.top = '6px';
+          block.style.height = '28px';
+          block.style.left = `${startX}px`;
+          block.style.width = `${blockWidth}px`;
+          block.dataset.captionId = caption.id;
+          block.dataset.wordIdx = String(wIdx);
+          block.dataset.start = String(w.start);
+          block.dataset.end = String(w.end);
+          block.title = `Word: "${w.word}"\n${w.start.toFixed(2)}s - ${w.end.toFixed(2)}s\n• Click to seek\n• Drag edges to adjust\n• Double click to edit`;
 
-      // Center Caption Text (STRICT ONE LINE TRUNCATED WITH "...")
-      const textSpan = document.createElement('span');
-      textSpan.className = 'truncate px-1.5 pointer-events-none text-[10px] font-bold text-white leading-none whitespace-nowrap overflow-hidden flex-1 text-center';
-      textSpan.textContent = caption.text;
+          // Trim Left Handle
+          const leftHandle = document.createElement('div');
+          leftHandle.className = 'absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-[#34D399] bg-transparent group-hover/word:bg-white/40 transition z-20 rounded-l';
 
-      // Trim Right Handle
-      const rightHandle = document.createElement('div');
-      rightHandle.className = 'absolute right-0 top-0 bottom-0 w-2.5 cursor-ew-resize hover:bg-[#6366F1] bg-[#6366F1]/50 opacity-0 group-hover/block:opacity-100 transition z-20 rounded-r';
+          // Word Text
+          const textSpan = document.createElement('span');
+          textSpan.className = 'truncate px-1 pointer-events-none text-[10px] font-bold text-white leading-none whitespace-nowrap overflow-hidden text-center flex-1';
+          textSpan.textContent = w.word;
 
-      block.appendChild(leftHandle);
-      block.appendChild(textSpan);
-      block.appendChild(rightHandle);
+          // Trim Right Handle
+          const rightHandle = document.createElement('div');
+          rightHandle.className = 'absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-[#34D399] bg-transparent group-hover/word:bg-white/40 transition z-20 rounded-r';
 
-      // Double click: Edit caption text in-place
-      block.addEventListener('dblclick', (e) => {
-        e.stopPropagation();
-        const newText = prompt('Edit Caption Text:', caption.text);
-        if (newText !== null && newText.trim() !== '') {
-          caption.text = newText.trim();
-          caption.isEdited = true;
-          this.renderCaptionBlocks();
-          if (this.player) this.player.render();
-          if (window.kalakarEditor?.renderTranscriptList) window.kalakarEditor.renderTranscriptList();
-          if (window.saveCurrentProject) window.saveCurrentProject();
-        }
+          block.appendChild(leftHandle);
+          block.appendChild(textSpan);
+          block.appendChild(rightHandle);
+
+          // Click: seek to word start
+          block.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.selectedCaptionId = caption.id;
+            if (this.player) this.player.seek(w.start);
+          });
+
+          // Double click: edit word text
+          block.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            const newWord = prompt('Edit Word:', w.word);
+            if (newWord !== null && newWord.trim() !== '') {
+              w.word = newWord.trim();
+              caption.text = words.map(x => x.word).join(' ');
+              caption.isEdited = true;
+              this.renderCaptionBlocks();
+              if (this.player) this.player.render();
+              if (window.kalakarEditor?.renderTranscriptList) window.kalakarEditor.renderTranscriptList();
+              if (window.saveCurrentProject) window.saveCurrentProject();
+            }
+          });
+
+          // Left Trim Handle Drag (Adjust word start)
+          leftHandle.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            const startMouseX = e.clientX;
+            const origStart = w.start;
+
+            const onMouseMove = (moveEvt) => {
+              const deltaX = moveEvt.clientX - startMouseX;
+              const deltaSec = deltaX / (this.pixelsPerSecond * this.zoom);
+              w.start = Math.max(0, Math.min(w.end - 0.05, Math.round((origStart + deltaSec) * 100) / 100));
+              if (wIdx === 0) caption.startTime = w.start;
+              block.style.left = `${w.start * this.pixelsPerSecond * this.zoom}px`;
+              block.style.width = `${Math.max(20, ((w.end - w.start) * this.pixelsPerSecond * this.zoom) - 2)}px`;
+              block.dataset.start = String(w.start);
+            };
+
+            const onMouseUp = () => {
+              window.removeEventListener('mousemove', onMouseMove);
+              window.removeEventListener('mouseup', onMouseUp);
+              caption.isEdited = true;
+              this.renderCaptionBlocks();
+              if (this.player) this.player.render();
+              if (window.kalakarEditor?.renderTranscriptList) window.kalakarEditor.renderTranscriptList();
+              if (window.kalakarEditor?.pushStateToHistory) window.kalakarEditor.pushStateToHistory();
+              if (window.saveCurrentProject) window.saveCurrentProject();
+            };
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+          });
+
+          // Right Trim Handle Drag (Adjust word end)
+          rightHandle.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            const startMouseX = e.clientX;
+            const origEnd = w.end;
+
+            const onMouseMove = (moveEvt) => {
+              const deltaX = moveEvt.clientX - startMouseX;
+              const deltaSec = deltaX / (this.pixelsPerSecond * this.zoom);
+              w.end = Math.max(w.start + 0.05, Math.min(this.timeline.duration, Math.round((origEnd + deltaSec) * 100) / 100));
+              if (wIdx === words.length - 1) caption.endTime = w.end;
+              block.style.width = `${Math.max(20, ((w.end - w.start) * this.pixelsPerSecond * this.zoom) - 2)}px`;
+              block.dataset.end = String(w.end);
+            };
+
+            const onMouseUp = () => {
+              window.removeEventListener('mousemove', onMouseMove);
+              window.removeEventListener('mouseup', onMouseUp);
+              caption.isEdited = true;
+              this.renderCaptionBlocks();
+              if (this.player) this.player.render();
+              if (window.kalakarEditor?.renderTranscriptList) window.kalakarEditor.renderTranscriptList();
+              if (window.kalakarEditor?.pushStateToHistory) window.kalakarEditor.pushStateToHistory();
+              if (window.saveCurrentProject) window.saveCurrentProject();
+            };
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+          });
+
+          this.captionsTrackEl.appendChild(block);
+        });
       });
+    } else {
+      // ─── 2. LINE-LEVEL BLOCKS (FULL SENTENCE BLOCKS) ───
+      this.timeline.captions.forEach(caption => {
+        const startX = (caption.startTime * this.pixelsPerSecond * this.zoom);
+        const blockWidth = Math.max(30, ((caption.endTime - caption.startTime) * this.pixelsPerSecond * this.zoom) - 3);
 
-      // Single click: seek to caption start time
-      block.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.selectedCaptionId = caption.id;
-        if (this.player) this.player.seek(caption.startTime);
+        const block = document.createElement('div');
+        block.className = 'caption-block flex items-center justify-between group/block relative select-none';
+        block.style.left = `${startX}px`;
+        block.style.width = `${blockWidth}px`;
+        block.dataset.captionId = caption.id;
+        block.dataset.start = String(caption.startTime);
+        block.dataset.end = String(caption.endTime);
+        block.title = `${caption.text}\n(${caption.startTime.toFixed(2)}s - ${caption.endTime.toFixed(2)}s)`;
+
+        // Trim Left Handle
+        const leftHandle = document.createElement('div');
+        leftHandle.className = 'absolute left-0 top-0 bottom-0 w-2.5 cursor-ew-resize hover:bg-[#6366F1] bg-[#6366F1]/50 opacity-0 group-hover/block:opacity-100 transition z-20 rounded-l';
+
+        const textSpan = document.createElement('span');
+        textSpan.className = 'truncate px-1.5 pointer-events-none text-[10px] font-bold text-white leading-none whitespace-nowrap overflow-hidden flex-1 text-center';
+        textSpan.textContent = caption.text;
+
+        const rightHandle = document.createElement('div');
+        rightHandle.className = 'absolute right-0 top-0 bottom-0 w-2.5 cursor-ew-resize hover:bg-[#6366F1] bg-[#6366F1]/50 opacity-0 group-hover/block:opacity-100 transition z-20 rounded-r';
+
+        block.appendChild(leftHandle);
+        block.appendChild(textSpan);
+        block.appendChild(rightHandle);
+
+        block.addEventListener('dblclick', (e) => {
+          e.stopPropagation();
+          const newText = prompt('Edit Caption Text:', caption.text);
+          if (newText !== null && newText.trim() !== '') {
+            caption.text = newText.trim();
+            caption.isEdited = true;
+            this.renderCaptionBlocks();
+            if (this.player) this.player.render();
+            if (window.kalakarEditor?.renderTranscriptList) window.kalakarEditor.renderTranscriptList();
+            if (window.saveCurrentProject) window.saveCurrentProject();
+          }
+        });
+
+        block.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.selectedCaptionId = caption.id;
+          if (this.player) this.player.seek(caption.startTime);
+        });
+
+        // Block Drag & Move
+        block.addEventListener('mousedown', (e) => {
+          if (e.target === leftHandle || e.target === rightHandle) return;
+          e.stopPropagation();
+          const startMouseX = e.clientX;
+          const origStart = caption.startTime;
+          const origEnd = caption.endTime;
+          const blockDur = origEnd - origStart;
+
+          const onMouseMove = (moveEvt) => {
+            const deltaX = moveEvt.clientX - startMouseX;
+            const deltaSec = deltaX / (this.pixelsPerSecond * this.zoom);
+            const newStart = Math.max(0, Math.min(this.timeline.duration - blockDur, Math.round((origStart + deltaSec) * 100) / 100));
+            caption.startTime = newStart;
+            caption.endTime = Math.round((newStart + blockDur) * 100) / 100;
+            caption.isEdited = true;
+
+            this.timeline.captions.sort((a, b) => a.startTime - b.startTime);
+            this.renderCaptionBlocks();
+            if (this.player) this.player.render();
+            if (window.kalakarEditor?.renderTranscriptList) window.kalakarEditor.renderTranscriptList();
+          };
+
+          const onMouseUp = () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+            if (window.kalakarEditor?.pushStateToHistory) window.kalakarEditor.pushStateToHistory();
+            if (window.saveCurrentProject) window.saveCurrentProject();
+          };
+
+          window.addEventListener('mousemove', onMouseMove);
+          window.addEventListener('mouseup', onMouseUp);
+        });
+
+        // Left Trim
+        leftHandle.addEventListener('mousedown', (e) => {
+          e.stopPropagation();
+          const startMouseX = e.clientX;
+          const origStart = caption.startTime;
+
+          const onMouseMove = (moveEvt) => {
+            const deltaX = moveEvt.clientX - startMouseX;
+            const deltaSec = deltaX / (this.pixelsPerSecond * this.zoom);
+            caption.startTime = Math.max(0, Math.min(caption.endTime - 0.08, Math.round((origStart + deltaSec) * 100) / 100));
+            caption.isEdited = true;
+            this.timeline.captions.sort((a, b) => a.startTime - b.startTime);
+            this.renderCaptionBlocks();
+            if (this.player) this.player.render();
+            if (window.kalakarEditor?.renderTranscriptList) window.kalakarEditor.renderTranscriptList();
+          };
+
+          const onMouseUp = () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+            if (window.kalakarEditor?.pushStateToHistory) window.kalakarEditor.pushStateToHistory();
+            if (window.saveCurrentProject) window.saveCurrentProject();
+          };
+
+          window.addEventListener('mousemove', onMouseMove);
+          window.addEventListener('mouseup', onMouseUp);
+        });
+
+        // Right Trim
+        rightHandle.addEventListener('mousedown', (e) => {
+          e.stopPropagation();
+          const startMouseX = e.clientX;
+          const origEnd = caption.endTime;
+
+          const onMouseMove = (moveEvt) => {
+            const deltaX = moveEvt.clientX - startMouseX;
+            const deltaSec = deltaX / (this.pixelsPerSecond * this.zoom);
+            caption.endTime = Math.max(caption.startTime + 0.08, Math.min(this.timeline.duration, Math.round((origEnd + deltaSec) * 100) / 100));
+            caption.isEdited = true;
+            this.timeline.captions.sort((a, b) => a.startTime - b.startTime);
+            this.renderCaptionBlocks();
+            if (this.player) this.player.render();
+            if (window.kalakarEditor?.renderTranscriptList) window.kalakarEditor.renderTranscriptList();
+          };
+
+          const onMouseUp = () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+            if (window.kalakarEditor?.pushStateToHistory) window.kalakarEditor.pushStateToHistory();
+            if (window.saveCurrentProject) window.saveCurrentProject();
+          };
+
+          window.addEventListener('mousemove', onMouseMove);
+          window.addEventListener('mouseup', onMouseUp);
+        });
+
+        this.captionsTrackEl.appendChild(block);
       });
-
-      // ── 1. Whole Block Drag & Move (Changes startTime & endTime, updates object in-place) ──
-      block.addEventListener('mousedown', (e) => {
-        if (e.target === leftHandle || e.target === rightHandle) return;
-        e.stopPropagation();
-        const startMouseX = e.clientX;
-        const origStart = caption.startTime;
-        const origEnd = caption.endTime;
-        const blockDur = origEnd - origStart;
-
-        const onMouseMove = (moveEvt) => {
-          const deltaX = moveEvt.clientX - startMouseX;
-          const deltaSec = deltaX / (this.pixelsPerSecond * this.zoom);
-          const newStart = Math.max(0, Math.min(this.timeline.duration - blockDur, Math.round((origStart + deltaSec) * 100) / 100));
-          caption.startTime = newStart;
-          caption.endTime = Math.round((newStart + blockDur) * 100) / 100;
-          caption.isEdited = true;
-
-          this.timeline.captions.sort((a, b) => a.startTime - b.startTime);
-          this.renderCaptionBlocks();
-          if (this.player) this.player.render();
-          if (window.kalakarEditor?.renderTranscriptList) window.kalakarEditor.renderTranscriptList();
-        };
-
-        const onMouseUp = () => {
-          window.removeEventListener('mousemove', onMouseMove);
-          window.removeEventListener('mouseup', onMouseUp);
-          if (window.kalakarEditor?.pushStateToHistory) window.kalakarEditor.pushStateToHistory();
-          if (window.saveCurrentProject) window.saveCurrentProject();
-        };
-
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('mouseup', onMouseUp);
-      });
-
-      // ── 2. Left Trim Handle Drag (Adjusts startTime) ──
-      leftHandle.addEventListener('mousedown', (e) => {
-        e.stopPropagation();
-        const startMouseX = e.clientX;
-        const origStart = caption.startTime;
-
-        const onMouseMove = (moveEvt) => {
-          const deltaX = moveEvt.clientX - startMouseX;
-          const deltaSec = deltaX / (this.pixelsPerSecond * this.zoom);
-          caption.startTime = Math.max(0, Math.min(caption.endTime - 0.08, Math.round((origStart + deltaSec) * 100) / 100));
-          caption.isEdited = true;
-
-          this.timeline.captions.sort((a, b) => a.startTime - b.startTime);
-          this.renderCaptionBlocks();
-          if (this.player) this.player.render();
-          if (window.kalakarEditor?.renderTranscriptList) window.kalakarEditor.renderTranscriptList();
-        };
-
-        const onMouseUp = () => {
-          window.removeEventListener('mousemove', onMouseMove);
-          window.removeEventListener('mouseup', onMouseUp);
-          if (window.kalakarEditor?.pushStateToHistory) window.kalakarEditor.pushStateToHistory();
-          if (window.saveCurrentProject) window.saveCurrentProject();
-        };
-
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('mouseup', onMouseUp);
-      });
-
-      // ── 3. Right Trim Handle Drag (Adjusts endTime) ──
-      rightHandle.addEventListener('mousedown', (e) => {
-        e.stopPropagation();
-        const startMouseX = e.clientX;
-        const origEnd = caption.endTime;
-
-        const onMouseMove = (moveEvt) => {
-          const deltaX = moveEvt.clientX - startMouseX;
-          const deltaSec = deltaX / (this.pixelsPerSecond * this.zoom);
-          caption.endTime = Math.max(caption.startTime + 0.08, Math.min(this.timeline.duration, Math.round((origEnd + deltaSec) * 100) / 100));
-          caption.isEdited = true;
-
-          this.timeline.captions.sort((a, b) => a.startTime - b.startTime);
-          this.renderCaptionBlocks();
-          if (this.player) this.player.render();
-          if (window.kalakarEditor?.renderTranscriptList) window.kalakarEditor.renderTranscriptList();
-        };
-
-        const onMouseUp = () => {
-          window.removeEventListener('mousemove', onMouseMove);
-          window.removeEventListener('mouseup', onMouseUp);
-          if (window.kalakarEditor?.pushStateToHistory) window.kalakarEditor.pushStateToHistory();
-          if (window.saveCurrentProject) window.saveCurrentProject();
-        };
-
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('mouseup', onMouseUp);
-      });
-
-      this.captionsTrackEl.appendChild(block);
-    });
+    }
 
     this.updatePlayhead(this.timeline.currentTime);
   }
@@ -1095,6 +1247,7 @@ class KalakarTimeline {
         this.mode = 'word';
         wordModeBtn.className = 'px-2.5 py-1 rounded font-bold text-[10px] bg-[#6366F1] text-white transition shadow-sm';
         lineModeBtn.className = 'px-2.5 py-1 rounded font-medium text-[10px] text-[#94A3B8] hover:text-white transition';
+        this.renderCaptionBlocks();
         if (this.player) this.player.setStyle({ displayMode: 'chunk' });
       });
 
@@ -1102,6 +1255,7 @@ class KalakarTimeline {
         this.mode = 'line';
         lineModeBtn.className = 'px-2.5 py-1 rounded font-bold text-[10px] bg-[#6366F1] text-white transition shadow-sm';
         wordModeBtn.className = 'px-2.5 py-1 rounded font-medium text-[10px] text-[#94A3B8] hover:text-white transition';
+        this.renderCaptionBlocks();
         if (this.player) this.player.setStyle({ displayMode: 'full' });
       });
     }

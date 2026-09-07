@@ -155,13 +155,14 @@ export default async function handler(req, res) {
     // Clean up temporary serverless file
     try { fs.unlinkSync(file.filepath); } catch (_) {}
 
-    // Prepare Whisper API payload
+    // Prepare Whisper API payload with precise word-level granularity
     const whisperFormData = new FormData();
     whisperFormData.append('file', blob, file.originalFilename || 'audio.mp4');
     whisperFormData.append('model', isGroq ? 'whisper-large-v3' : 'whisper-1');
     whisperFormData.append('response_format', 'verbose_json');
     whisperFormData.append('timestamp_granularities[]', 'segment');
     whisperFormData.append('timestamp_granularities[]', 'word');
+    whisperFormData.append('temperature', '0');
 
     if (isHinglish) {
       // Instruct Whisper that speech is in Hindi, but prompt it to output Latin / Hinglish text
@@ -212,7 +213,7 @@ export default async function handler(req, res) {
     const rawSegments = data.segments || [];
     const rawWords = data.words || [];
 
-    // Format Captions matching editor.js schema
+    // Format Captions matching editor.js schema with authoritative word-level timestamps
     const captions = rawSegments.map((seg, idx) => {
       let text = (seg.text || '').trim();
       if (isHinglish) {
@@ -221,26 +222,9 @@ export default async function handler(req, res) {
       const startTime = Number(Number(seg.start || 0).toFixed(3));
       const endTime = Number(Number(seg.end || seg.start + 0.5).toFixed(3));
 
-      return {
-        id: 'caption_' + String(idx + 1).padStart(3, '0'),
-        text: text,
-        startTime: startTime,
-        endTime: endTime,
-        originalText: text,
-        language: isHinglish ? 'Hinglish' : langRaw,
-        confidence: 0.95,
-        videoClipId: 'clip_001',
-        isEdited: false
-      };
-    });
-
-    // Attach word-level timestamps to segments
-    const segments = rawSegments.map(seg => {
-      const sStart = seg.start || 0;
-      const sEnd = seg.end || sStart + 0.5;
-
-      const segWords = rawWords
-        .filter(w => (w.start >= sStart - 0.05) && (w.end <= sEnd + 0.1))
+      // Extract matching word-level timestamps for this segment
+      let segWords = rawWords
+        .filter(w => (w.start >= startTime - 0.05) && (w.end <= endTime + 0.1))
         .map(w => {
           let wWord = (w.word || '').trim();
           if (isHinglish) {
@@ -251,7 +235,40 @@ export default async function handler(req, res) {
             start: Number(Number(w.start || 0).toFixed(3)),
             end: Number(Number(w.end || 0).toFixed(3))
           };
-        });
+        })
+        .filter(w => w.word.length > 0);
+
+      // Fallback word tokenization if Whisper API omitted words for this segment
+      if (segWords.length === 0 && text.length > 0) {
+        const tokens = text.split(/\s+/).filter(Boolean);
+        const dur = Math.max(0.1, endTime - startTime);
+        const wDur = dur / Math.max(1, tokens.length);
+        segWords = tokens.map((token, tIdx) => ({
+          word: token,
+          start: Number((startTime + (tIdx * wDur)).toFixed(3)),
+          end: Number((startTime + ((tIdx + 1) * wDur)).toFixed(3))
+        }));
+      }
+
+      return {
+        id: 'caption_' + String(idx + 1).padStart(3, '0'),
+        text: text,
+        startTime: startTime,
+        endTime: endTime,
+        originalText: text,
+        language: isHinglish ? 'Hinglish' : langRaw,
+        confidence: 0.95,
+        videoClipId: 'clip_001',
+        isEdited: false,
+        words: segWords
+      };
+    });
+
+    // Attach word-level timestamps to segments
+    const segments = rawSegments.map((seg, idx) => {
+      const sStart = seg.start || 0;
+      const sEnd = seg.end || sStart + 0.5;
+      const segCap = captions[idx];
 
       let segText = (seg.text || '').trim();
       if (isHinglish) {
@@ -262,7 +279,7 @@ export default async function handler(req, res) {
         start: Number(Number(sStart).toFixed(3)),
         end: Number(Number(sEnd).toFixed(3)),
         text: segText,
-        words: segWords
+        words: segCap ? segCap.words : []
       };
     });
 

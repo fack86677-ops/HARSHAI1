@@ -15,6 +15,7 @@ class KalakarPlayer {
     this.isDragging = false;
     this.aspectRatio = '9:16';
     this.animFrameId = null;
+    this.syncOffset = -0.20; // 200ms audio-visual latency compensation
     this._eventsBound = false;
     
     this.initEvents();
@@ -401,12 +402,13 @@ class KalakarPlayer {
 
   render() {
     if (!this.captionOverlay) return;
-    const now = this.currentTime;
+    // Audio-Caption Sync Offset (-0.2s delay compensation for instant speech-to-visual match)
+    const effectiveTime = Math.max(0, this.currentTime - (this.syncOffset || -0.20));
 
     const captions = window.kalakarTimeline ? window.kalakarTimeline.timeline.captions : [];
     
-    // Find active caption strictly by authoritative numeric startTime & endTime
-    const activeCap = captions.find(c => now >= (c.startTime - 0.03) && now <= (c.endTime + 0.05));
+    // Find active caption strictly by authoritative numeric startTime & endTime using effectiveTime
+    const activeCap = captions.find(c => effectiveTime >= (c.startTime - 0.03) && effectiveTime <= (c.endTime + 0.05));
 
     const activeCapId = activeCap ? activeCap.id : null;
     if (this._lastCapId !== activeCapId) {
@@ -414,6 +416,11 @@ class KalakarPlayer {
       if (window.kalakarEditor && typeof window.kalakarEditor.highlightTranscriptItem === 'function') {
         window.kalakarEditor.highlightTranscriptItem(activeCapId);
       }
+    }
+
+    // Synchronize active word highlighting in the sidebar transcript list
+    if (window.kalakarEditor && typeof window.kalakarEditor.updateActiveWordInSidebar === 'function') {
+      window.kalakarEditor.updateActiveWordInSidebar(effectiveTime, activeCapId);
     }
 
     if (!activeCap) {
@@ -425,26 +432,35 @@ class KalakarPlayer {
     this.captionOverlay.style.opacity = '1';
     const s = this.currentStyle;
 
-    // Split caption text into words for natural horizontal rendering
-    const rawWords = activeCap.text.split(/\s+/).filter(Boolean);
-    if (rawWords.length === 0) {
+    // Use Whisper word-level timestamps if available, or fallback
+    let words = [];
+    if (Array.isArray(activeCap.words) && activeCap.words.length > 0) {
+      words = activeCap.words;
+    } else {
+      const rawWords = activeCap.text.split(/\s+/).filter(Boolean);
+      if (rawWords.length === 0) {
+        this.captionOverlay.innerHTML = '';
+        return;
+      }
+      const capDur = Math.max(0.1, activeCap.endTime - activeCap.startTime);
+      const wordDur = capDur / rawWords.length;
+      words = rawWords.map((w, i) => ({
+        word: w,
+        start: activeCap.startTime + (i * wordDur),
+        end: activeCap.startTime + ((i + 1) * wordDur)
+      }));
+    }
+
+    if (words.length === 0) {
       this.captionOverlay.innerHTML = '';
       return;
     }
-
-    const capDur = Math.max(0.1, activeCap.endTime - activeCap.startTime);
-    const wordDur = capDur / rawWords.length;
-    const words = rawWords.map((w, i) => ({
-      word: w,
-      start: activeCap.startTime + (i * wordDur),
-      end: activeCap.startTime + ((i + 1) * wordDur)
-    }));
 
     let visibleWords = [];
 
     if (this.displayMode === 'single') {
       // 1 Word Mode: Show exactly ONE word at a time, strictly centered
-      const activeWord = words.find(w => now >= (w.start - 0.02) && now <= (w.end + 0.05));
+      const activeWord = words.find(w => effectiveTime >= (w.start - 0.02) && effectiveTime <= (w.end + 0.05));
       visibleWords = [activeWord || words[0]];
     } else if (this.displayMode === 'full') {
       // Full Line Mode: Show entire sentence horizontally
@@ -452,7 +468,7 @@ class KalakarPlayer {
     } else {
       // 2-3 Words Mode (default chunk): Display 2-3 words together horizontally side by side
       const chunkSize = 3;
-      const activeWordIdx = words.findIndex(w => now >= (w.start - 0.02) && now <= (w.end + 0.05));
+      const activeWordIdx = words.findIndex(w => effectiveTime >= (w.start - 0.02) && effectiveTime <= (w.end + 0.05));
       let chunkStart = 0;
       if (activeWordIdx >= 0) {
         chunkStart = Math.floor(activeWordIdx / chunkSize) * chunkSize;
@@ -464,7 +480,7 @@ class KalakarPlayer {
     let html = '';
     const animType = s.animation || 'pop';
     visibleWords.forEach(w => {
-      const isWordActive = (now >= (w.start - 0.02) && now <= (w.end + 0.05));
+      const isWordActive = (effectiveTime >= (w.start - 0.02) && effectiveTime <= (w.end + 0.05));
       let wordStyle = 'display: inline-flex; align-items: center; margin: 0 5px; vertical-align: middle; paint-order: stroke fill markers;';
       let wordClass = 'word-span';
 

@@ -554,6 +554,61 @@ body.in-studio {
   border-bottom-right-radius: 6px;
 }
 
+/* ── Word-Level Timeline Blocks ── */
+.timeline-word-block {
+  position: absolute;
+  height: 28px;
+  top: 6px;
+  background: rgba(79, 70, 229, 0.35);
+  border: 1px solid rgba(129, 140, 248, 0.4);
+  border-radius: 6px;
+  color: #FFFFFF;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 0 3px;
+  cursor: pointer;
+  transition: all 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+  z-index: 10;
+  user-select: none;
+}
+.timeline-word-block:hover {
+  background: rgba(99, 102, 241, 0.7);
+  border-color: #818CF8;
+  color: #FFFFFF;
+  transform: translateY(-1px);
+  z-index: 18;
+}
+.timeline-word-block.active {
+  background: linear-gradient(135deg, #10B981, #059669) !important;
+  border: 1.5px solid #34D399 !important;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.7) !important;
+  color: #FFFFFF !important;
+  transform: scale(1.05);
+  z-index: 25;
+}
+
+/* ── Caption Sidebar Word Tokens & Active Pill Highlighting ── */
+.caption-word-token {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: all 0.1s ease;
+  cursor: pointer;
+  user-select: text;
+}
+.caption-word-token:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+}
+.caption-word-token.active-word {
+  background: rgba(20, 83, 45, 0.45) !important;
+  color: #4ADE80 !important;
+  border: 1px solid rgba(74, 222, 128, 0.45) !important;
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.25) !important;
+  font-weight: 800 !important;
+}
+
 .timeline-playhead {
   position: absolute;
   top: 0;

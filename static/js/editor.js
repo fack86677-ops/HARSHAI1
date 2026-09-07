@@ -1104,7 +1104,7 @@ class KalakarEditor {
     }
   }
 
-  // ─── TRANSCRIPT LIST RENDERING ────────────────────────────────────────
+  // ─── TRANSCRIPT LIST RENDERING (NUMBERED & ACTIVE WORD HIGHLIGHTING) ───
 
   renderTranscriptList() {
     const listContainer = document.getElementById('transcript-list');
@@ -1126,49 +1126,89 @@ class KalakarEditor {
 
     captions.forEach((cap, idx) => {
       const row = document.createElement('div');
-      row.className = 'transcript-line-item flex items-start gap-2.5 p-2.5 rounded-xl hover:bg-[#151C24] border border-[#1E293B]/40 hover:border-[#6366F1]/40 transition group cursor-pointer';
+      row.className = 'transcript-line-item flex items-start gap-2.5 p-2.5 rounded-xl hover:bg-[#151C24] border border-[#1E293B]/60 hover:border-[#6366F1]/50 transition duration-150 group cursor-pointer select-none';
       row.setAttribute('data-text', cap.text);
       row.setAttribute('data-cap-id', cap.id);
 
-      // Line ID
-      const numSpan = document.createElement('div');
-      numSpan.className = 'text-[10px] font-mono font-bold text-[#818CF8] pt-0.5 select-none w-7 shrink-0 truncate';
-      numSpan.textContent = cap.id;
+      // 1. Sleek Numbered Badge (1, 2, 3...)
+      const numBadge = document.createElement('div');
+      numBadge.className = 'flex items-center justify-center w-6 h-6 rounded-lg bg-[#10162A] border border-[#1E293B] text-[#94A3B8] group-hover:text-white group-hover:border-[#6366F1]/50 group-hover:bg-[#6366F1]/20 font-mono text-[11px] font-bold shrink-0 pt-0.5 select-none transition';
+      numBadge.textContent = String(idx + 1);
 
-      // Caption Content
+      // 2. Caption Content Box
       const contentBox = document.createElement('div');
       contentBox.className = 'flex-1 min-w-0 flex flex-col gap-1';
 
+      // Time Range Badge
       const timingBadge = document.createElement('div');
       timingBadge.className = 'text-[10px] font-mono text-[#64748B] flex items-center gap-1.5';
       timingBadge.innerHTML = `
-        <span class="text-[#10B981]">${cap.startTime.toFixed(2)}s</span>
+        <span class="text-[#10B981] font-semibold">${cap.startTime.toFixed(2)}s</span>
         <span>→</span>
-        <span class="text-[#38BDF8]">${cap.endTime.toFixed(2)}s</span>
+        <span class="text-[#38BDF8] font-semibold">${cap.endTime.toFixed(2)}s</span>
         ${cap.isEdited ? '<span class="text-[9px] px-1 py-0.2 rounded bg-[#F59E0B]/20 text-[#F59E0B] font-sans font-bold">edited</span>' : ''}
       `;
 
-      const textSpan = document.createElement('div');
-      textSpan.className = 'text-xs text-white leading-relaxed select-text font-medium';
-      textSpan.textContent = cap.text;
+      // Word-level interactive text container
+      const wordsWrap = document.createElement('div');
+      wordsWrap.className = 'caption-words-wrap flex flex-wrap gap-1 text-xs text-white leading-relaxed select-text font-medium mt-0.5';
 
-      contentBox.appendChild(timingBadge);
-      contentBox.appendChild(textSpan);
+      // Extract words for this caption
+      const words = (Array.isArray(cap.words) && cap.words.length > 0)
+        ? cap.words
+        : cap.text.split(/\s+/).filter(Boolean).map((w, i, arr) => {
+            const dur = Math.max(0.1, cap.endTime - cap.startTime);
+            const wd = dur / arr.length;
+            return {
+              word: w,
+              start: Math.round((cap.startTime + (i * wd)) * 1000) / 1000,
+              end: Math.round((cap.startTime + ((i + 1) * wd)) * 1000) / 1000
+            };
+          });
 
-      // Double click text to edit in-place
-      textSpan.addEventListener('dblclick', (e) => {
+      words.forEach((w) => {
+        const wordToken = document.createElement('span');
+        wordToken.className = 'caption-word-token px-1.5 py-0.5 rounded-md transition duration-100 cursor-pointer text-[#E2E8F0] hover:bg-white/10';
+        wordToken.textContent = w.word;
+        wordToken.dataset.start = String(w.start);
+        wordToken.dataset.end = String(w.end);
+        wordToken.dataset.capId = cap.id;
+        wordToken.title = `Click to seek to ${w.start.toFixed(2)}s`;
+
+        wordToken.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (this.player) this.player.seek(w.start);
+        });
+
+        wordsWrap.appendChild(wordToken);
+      });
+
+      // Double click words container to edit entire caption text
+      wordsWrap.addEventListener('dblclick', (e) => {
         e.stopPropagation();
         const updated = prompt('Edit Caption Text:', cap.text);
         if (updated !== null && updated.trim() !== '') {
           this.pushStateToHistory();
           cap.text = updated.trim();
           cap.isEdited = true;
+          // Re-generate word tokens
+          const tokens = cap.text.split(/\s+/).filter(Boolean);
+          const dur = Math.max(0.1, cap.endTime - cap.startTime);
+          const wd = dur / Math.max(1, tokens.length);
+          cap.words = tokens.map((tok, i) => ({
+            word: tok,
+            start: Math.round((cap.startTime + (i * wd)) * 1000) / 1000,
+            end: Math.round((cap.startTime + ((i + 1) * wd)) * 1000) / 1000
+          }));
           this.renderTranscriptList();
           if (this.timeline) this.timeline.renderCaptionBlocks();
           if (this.player) this.player.render();
           if (window.saveCurrentProject) window.saveCurrentProject();
         }
       });
+
+      contentBox.appendChild(timingBadge);
+      contentBox.appendChild(wordsWrap);
 
       // Quick Actions
       const actions = document.createElement('div');
@@ -1205,7 +1245,7 @@ class KalakarEditor {
       actions.appendChild(dupBtn);
       actions.appendChild(delBtn);
 
-      row.appendChild(numSpan);
+      row.appendChild(numBadge);
       row.appendChild(contentBox);
       row.appendChild(actions);
 
@@ -1225,6 +1265,32 @@ class KalakarEditor {
         item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       } else {
         item.classList.remove('bg-[#6366F1]/20', 'border-[#6366F1]/70');
+      }
+    });
+  }
+
+  updateActiveWordInSidebar(effectiveTime, activeCapId) {
+    // 1. Highlight active segment row
+    if (this._lastHighlightedCapId !== activeCapId) {
+      this._lastHighlightedCapId = activeCapId;
+      this.highlightTranscriptItem(activeCapId);
+    }
+
+    // 2. Highlight currently spoken word in the sidebar with green pill background
+    const wordTokens = document.querySelectorAll('.caption-word-token');
+    wordTokens.forEach(token => {
+      const start = parseFloat(token.dataset.start);
+      const end = parseFloat(token.dataset.end);
+      if (!isNaN(start) && !isNaN(end) && effectiveTime >= (start - 0.02) && effectiveTime <= (end + 0.04)) {
+        if (!token.classList.contains('active-word')) {
+          token.classList.add('active-word', 'bg-green-900/40', 'text-green-400', 'font-bold', 'border', 'border-green-500/40', 'shadow-[0_0_8px_rgba(74,222,128,0.25)]');
+          token.classList.remove('text-[#E2E8F0]');
+        }
+      } else {
+        if (token.classList.contains('active-word')) {
+          token.classList.remove('active-word', 'bg-green-900/40', 'text-green-400', 'font-bold', 'border', 'border-green-500/40', 'shadow-[0_0_8px_rgba(74,222,128,0.25)]');
+          token.classList.add('text-[#E2E8F0]');
+        }
       }
     });
   }
