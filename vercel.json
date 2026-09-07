@@ -1,57 +1,19 @@
 {
-  "version": 2,
-  "routes": [
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/editor", "destination": "/editor.html" },
+    { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/pricing", "destination": "/pricing.html" }
+  ],
+  "headers": [
     {
-      "src": "^/api/(.*)",
-      "dest": "/api/"
-    },
-    {
-      "src": "^/$",
-      "dest": "/static/login.html"
-    },
-    {
-      "src": "^/login$",
-      "dest": "/static/login.html"
-    },
-    {
-      "src": "^/login.html$",
-      "dest": "/static/login.html"
-    },
-    {
-      "src": "^/editor$",
-      "dest": "/static/index.html"
-    },
-    {
-      "src": "^/index.html$",
-      "dest": "/static/index.html"
-    },
-    {
-      "src": "^/dashboard$",
-      "dest": "/static/dashboard.html"
-    },
-    {
-      "src": "^/dashboard.html$",
-      "dest": "/static/dashboard.html"
-    },
-    {
-      "src": "^/admin$",
-      "dest": "/static/admin.html"
-    },
-    {
-      "src": "^/admin.html$",
-      "dest": "/static/admin.html"
-    },
-    {
-      "src": "^/pricing$",
-      "dest": "/static/pricing.html"
-    },
-    {
-      "src": "^/pricing.html$",
-      "dest": "/static/pricing.html"
-    },
-    {
-      "src": "^/static/(.*)",
-      "dest": "/static/"
+      "source": "/static/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
     }
   ]
 }

@@ -197,18 +197,14 @@ window.handleDirectUpload = function(file) {
     return;
   }
 
-  // 1. Instant screen transition to Studio Editor (Never gets stuck)
-  showScreen('screen-studio');
-
-  // 2. Create zero-latency blob URL for local video playback
   const localBlobUrl = URL.createObjectURL(file);
-
   const newProject = {
     id: `proj_${Date.now()}`,
     title: file.name.replace(/\.[^/.]+$/, ""),
     filename: file.name,
     video_url: localBlobUrl,
     file_path: '',
+    file: file,
     created_at: "Just now",
     language: "Hinglish",
     duration: 15.0,
@@ -217,8 +213,6 @@ window.handleDirectUpload = function(file) {
     style: { ...TEMPLATES[0].style }
   };
 
-  currentProject = newProject;
-  window.currentProject = newProject;
   pendingUploadFile = file;
   window.pendingUploadFile = file;
   window.uploadedVideo = {
@@ -230,53 +224,10 @@ window.handleDirectUpload = function(file) {
     duration: 15.0
   };
 
-  // 3. Update Title
-  const titleDisplay = document.getElementById('project-title-display');
-  if (titleDisplay) titleDisplay.textContent = newProject.title;
+  // 1. Instantly open Studio Editor
+  openStudioEditor(newProject);
 
-  // 4. Load video directly into video player
-  const videoEl = document.getElementById('main-video-player');
-  const captionOverlay = document.getElementById('caption-render-box');
-  const safeZone = document.getElementById('safe-zone-box');
-
-  if (videoEl) {
-    videoEl.src = localBlobUrl;
-    videoEl.onloadedmetadata = () => {
-      if (videoEl.duration && !isNaN(videoEl.duration)) {
-        newProject.duration = videoEl.duration;
-        if (kalakarTimeline && kalakarTimeline.timeline) kalakarTimeline.timeline.duration = videoEl.duration;
-        if (window.uploadedVideo) window.uploadedVideo.duration = videoEl.duration;
-      }
-    };
-    videoEl.load();
-  }
-
-  // 5. Initialize or update Player, Timeline, and Editor safely
-  try {
-    if (!kalakarPlayer) {
-      kalakarPlayer = new KalakarPlayer(videoEl, captionOverlay, safeZone);
-      window.kalakarPlayer = kalakarPlayer;
-    } else {
-      kalakarPlayer.loadVideo(localBlobUrl);
-    }
-
-    const timelineContainer = document.getElementById('timeline-container');
-    if (!kalakarTimeline) {
-      kalakarTimeline = new KalakarTimeline(timelineContainer, kalakarPlayer);
-      window.kalakarTimeline = kalakarTimeline;
-    }
-    kalakarTimeline.setVideoSource(newProject.id, file.name, 15.0);
-
-    if (!kalakarEditor) {
-      kalakarEditor = new KalakarEditor(kalakarPlayer, kalakarTimeline);
-      window.kalakarEditor = kalakarEditor;
-    }
-    kalakarEditor.renderTranscriptList();
-  } catch (e) {
-    console.warn("Editor init note:", e);
-  }
-
-  // 6. Open Prepare Media Modal inside the Studio
+  // 2. Open Prepare Media Modal inside the Studio for language selection & caption trigger
   const modal = document.getElementById('modal-prepare-media');
   const previewName = document.getElementById('prepare-file-name');
   if (previewName) {
@@ -358,6 +309,7 @@ function initPrepareModal() {
   if (closeBtn && modal) {
     closeBtn.addEventListener('click', () => {
       modal.classList.add('hidden');
+      modal.style.setProperty('display', 'none', 'important');
       pendingUploadFile = null;
     });
   }
@@ -370,7 +322,10 @@ function initPrepareModal() {
       const emojis = document.getElementById('toggle-emojis')?.checked ?? true;
       const translate = document.getElementById('toggle-translation')?.checked ?? false;
 
-      modal.classList.add('hidden');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.style.setProperty('display', 'none', 'important');
+      }
       await startUploadAndTranscription(pendingUploadFile, { language, script, audioEnhance, emojis, translate });
     });
   }
@@ -383,7 +338,10 @@ async function startUploadAndTranscription(file, options) {
   const statusSubtext = document.getElementById('processing-status-subtext');
   const triviaEl = document.getElementById('processing-trivia');
 
-  if (processingModal) processingModal.classList.remove('hidden');
+  if (processingModal) {
+    processingModal.classList.remove('hidden');
+    processingModal.style.setProperty('display', 'flex', 'important');
+  }
   if (triviaEl) {
     triviaEl.textContent = DID_YOU_KNOW_TIPS[Math.floor(Math.random() * DID_YOU_KNOW_TIPS.length)];
   }
@@ -542,7 +500,10 @@ async function startUploadAndTranscription(file, options) {
     await new Promise(r => setTimeout(r, 600));
     updateProgress(100, "Ready!");
 
-    if (processingModal) processingModal.classList.add('hidden');
+    if (processingModal) {
+      processingModal.classList.add('hidden');
+      processingModal.style.setProperty('display', 'none', 'important');
+    }
 
     // Launch Studio Editor with real project data
     const project = {
@@ -567,7 +528,10 @@ async function startUploadAndTranscription(file, options) {
     if (window.showToast) {
       window.showToast("Note: " + err.message, true);
     }
-    if (processingModal) processingModal.classList.add('hidden');
+    if (processingModal) {
+      processingModal.classList.add('hidden');
+      processingModal.style.setProperty('display', 'none', 'important');
+    }
   }
 }
 
