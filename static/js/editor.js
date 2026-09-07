@@ -241,6 +241,7 @@ class KalakarEditor {
     if (closeBtn && modal) {
       closeBtn.addEventListener('click', () => {
         modal.classList.add('hidden');
+        modal.style.setProperty('display', 'none', 'important');
       });
     }
 
@@ -249,179 +250,43 @@ class KalakarEditor {
         const exportType = document.querySelector('input[name="export-format"]:checked')?.value || 'mp4';
         const exportRes = document.querySelector('input[name="export-res"]:checked')?.value || '1080p';
 
+        const captions = (this.timeline && this.timeline.timeline && this.timeline.timeline.captions) 
+          ? this.timeline.timeline.captions 
+          : (this.segments || []);
+
+        const proj = window.currentProject || {};
+
         confirmExportBtn.disabled = true;
-        confirmExportBtn.innerHTML = `
-          <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-black inline" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-          </svg> Rendering ${exportRes.toUpperCase()}...
-        `;
 
         try {
-          const captions = (this.timeline && this.timeline.timeline && this.timeline.timeline.captions) 
-            ? this.timeline.timeline.captions 
-            : (this.segments || []);
-
-          const timelineClips = (this.timeline && this.timeline.timeline && this.timeline.timeline.videoClips)
-            ? this.timeline.timeline.videoClips
-            : [];
-
-          const timelineDuration = (this.timeline && this.timeline.timeline && this.timeline.timeline.duration)
-            ? this.timeline.timeline.duration
-            : (window.currentProject?.duration || 0);
-
-          const proj = window.currentProject || {};
-
-          // Comprehensive payload matching exact model and requirements
-          const payload = {
-            video: {
-              sourceFileId: proj.file_id || proj.id || 'video_001',
-              file_path: proj.file_path || '',
-              video_url: proj.video_url || ''
-            },
-            timeline: {
-              duration: timelineDuration,
-              clips: timelineClips
-            },
-            captions: captions.map(c => ({
-              id: c.id,
-              text: c.text,
-              startTime: Number(c.startTime !== undefined ? c.startTime : c.start),
-              endTime: Number(c.endTime !== undefined ? c.endTime : c.end),
-              originalText: c.originalText || c.text,
-              language: c.language || 'hinglish',
-              confidence: c.confidence || 0.94,
-              videoClipId: c.videoClipId || 'clip_001',
-              isEdited: !!c.isEdited
-            })),
-            export: {
-              format: exportType,
-              resolution: exportRes
-            },
-            style: this.player ? this.player.currentStyle : {},
-
-            // Compatibility fields
-            type: exportType,
-            format: exportType,
-            resolution: exportRes,
-            file_path: proj.file_path || '',
-            video_url: proj.video_url || '',
-            segments: captions.map(c => ({
-              id: c.id,
-              start: Number(c.startTime !== undefined ? c.startTime : c.start),
-              end: Number(c.endTime !== undefined ? c.endTime : c.end),
-              text: c.text,
-              words: c.words || [],
-              isEdited: !!c.isEdited
-            }))
-          };
-
-          let apiBase = (typeof window.getApiBase === 'function') 
-            ? window.getApiBase() 
-            : (window.API_BASE || '');
-          if (window.location.protocol === 'https:' && apiBase.startsWith('http://')) {
-            apiBase = apiBase.replace(/^http:\/\//i, 'https://');
-          }
-          const endpointUrl = `${apiBase}/api/export`;
-
-          const res = await fetch(endpointUrl, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Accept': 'application/json, video/mp4, application/x-subrip, text/vtt, */*'
-            },
-            body: JSON.stringify(payload)
-          });
-
-          const contentType = res.headers.get('content-type') || '';
-
-          // Handle HTTP error responses without throwing JSON parse error
-          if (!res.ok) {
-            let errorMsg = `Server error (${res.status})`;
-            if (contentType.includes('application/json')) {
-              try {
-                const errData = await res.json();
-                errorMsg = errData.error?.message || errData.error || errData.message || errorMsg;
-              } catch (e) {
-                errorMsg = `Server returned status ${res.status}`;
-              }
-            } else {
-              const rawText = await res.text();
-              const cleanText = rawText.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
-              if (res.status === 404) {
-                errorMsg = 'Export API endpoint not found (404). Please ensure the studio server is running.';
-              } else if (cleanText.toLowerCase().includes('the page cannot be found') || cleanText.toLowerCase().includes('the page could not')) {
-                errorMsg = 'Export endpoint not reachable on this port. Check server on port 7860.';
-              } else if (cleanText) {
-                errorMsg = cleanText.slice(0, 140);
-              }
+          if (exportType === 'srt') {
+            this.exportSRT(captions, proj.title);
+            if (modal) {
+              modal.classList.add('hidden');
+              modal.style.setProperty('display', 'none', 'important');
             }
-            throw new Error(errorMsg);
-          }
-
-          // Case A: Binary file stream response (Direct Blob)
-          if (contentType.includes('video/') || contentType.includes('application/x-subrip') || 
-              contentType.includes('text/vtt') || contentType.includes('application/octet-stream')) {
-            const blob = await res.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            const ext = exportType === 'srt' ? 'srt' : (exportType === 'vtt' ? 'vtt' : 'mp4');
-            const dlFilename = `harsh_export_${Date.now()}.${ext}`;
-
-            const link = document.createElement('a');
-            link.href = blobUrl;
-            link.download = dlFilename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-
-            if (modal) modal.classList.add('hidden');
-            if (window.showToast) {
-              window.showToast(`🎉 Exported successfully: <b>${dlFilename}</b>`);
-            }
-            return;
-          }
-
-          // Case B: JSON metadata with downloadUrl
-          if (contentType.includes('application/json')) {
-            const data = await res.json();
-            if (data.success && (data.downloadUrl || data.download_url)) {
-              let dlUrl = data.downloadUrl || data.download_url;
-              if (!dlUrl.startsWith('http') && !dlUrl.startsWith('data:') && !dlUrl.startsWith('blob:')) {
-                dlUrl = apiBase + dlUrl;
-              }
-              const dlFilename = data.filename || `export.${exportType}`;
-              const link = document.createElement('a');
-              link.href = dlUrl;
-              link.download = dlFilename;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-
-              if (modal) modal.classList.add('hidden');
-              if (window.showToast) {
-                window.showToast(`🎉 Exported successfully: <b>${dlFilename}</b>`);
-              }
-            } else {
-              const errDetail = data.error?.message || data.error || 'Failed to render export file';
-              throw new Error(errDetail);
+          } else if (exportType === 'vtt') {
+            this.exportVTT(captions, proj.title);
+            if (modal) {
+              modal.classList.add('hidden');
+              modal.style.setProperty('display', 'none', 'important');
             }
           } else {
-            // Unexpected content type
-            const rawText = await res.text();
-            throw new Error('Unexpected response format from export server');
+            // Rendered Video (MP4) with burned-in captions, or Alpha channel overlay
+            await this.exportCanvasVideo({
+              exportType,
+              exportRes,
+              captions,
+              proj,
+              confirmExportBtn,
+              modal
+            });
           }
         } catch (err) {
-          let userMsg = err.message || 'Export failed';
-          if (err.name === 'TypeError' && err.message.toLowerCase().includes('fetch')) {
-            userMsg = 'Network error: Cannot reach export server. Check that the server on port 7860 is running.';
-          } else if (err.message.includes('Unexpected token')) {
-            userMsg = 'Export server returned an invalid non-JSON response.';
-          }
-          if (window.showToast) {
-            window.showToast('Export error: ' + userMsg, true);
-          }
           console.error('[EXPORT ERROR]', err);
+          if (window.showToast) {
+            window.showToast('Export error: ' + (err.message || 'Export failed'), true);
+          }
         } finally {
           confirmExportBtn.disabled = false;
           confirmExportBtn.innerHTML = `
@@ -431,6 +296,381 @@ class KalakarEditor {
         }
       });
     }
+  }
+
+  // ─── SUBTITLE EXPORTERS (.SRT & .VTT) ──────────────────────────────────
+
+  exportSRT(captions, title) {
+    const formatTime = (sec) => {
+      const s = Math.max(0, Number(sec) || 0);
+      const hrs = Math.floor(s / 3600);
+      const mins = Math.floor((s % 3600) / 60);
+      const secs = Math.floor(s % 60);
+      const ms = Math.floor((s % 1) * 1000);
+      return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')},${String(ms).padStart(3, '0')}`;
+    };
+
+    const srtContent = (captions || []).map((c, i) => {
+      const start = c.startTime !== undefined ? c.startTime : (c.start || 0);
+      const end = c.endTime !== undefined ? c.endTime : (c.end || start + 2);
+      return `${i + 1}\n${formatTime(start)} --> ${formatTime(end)}\n${(c.text || '').trim()}\n`;
+    }).join('\n');
+
+    const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
+    const filename = `${(title || 'video_captions').replace(/[^\w\s-]/gi, '').replace(/\s+/g, '_')}.srt`;
+    this.downloadBlob(blob, filename);
+
+    if (window.showToast) {
+      window.showToast(`📄 SubRip Subtitles Exported: <b>${filename}</b>`);
+    }
+  }
+
+  exportVTT(captions, title) {
+    const formatTime = (sec) => {
+      const s = Math.max(0, Number(sec) || 0);
+      const hrs = Math.floor(s / 3600);
+      const mins = Math.floor((s % 3600) / 60);
+      const secs = Math.floor(s % 60);
+      const ms = Math.floor((s % 1) * 1000);
+      return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
+    };
+
+    let vttContent = "WEBVTT\n\n";
+    vttContent += (captions || []).map((c, i) => {
+      const start = c.startTime !== undefined ? c.startTime : (c.start || 0);
+      const end = c.endTime !== undefined ? c.endTime : (c.end || start + 2);
+      return `${i + 1}\n${formatTime(start)} --> ${formatTime(end)}\n${(c.text || '').trim()}\n`;
+    }).join('\n');
+
+    const blob = new Blob([vttContent], { type: 'text/vtt;charset=utf-8' });
+    const filename = `${(title || 'video_captions').replace(/[^\w\s-]/gi, '').replace(/\s+/g, '_')}.vtt`;
+    this.downloadBlob(blob, filename);
+
+    if (window.showToast) {
+      window.showToast(`🌐 WebVTT Subtitles Exported: <b>${filename}</b>`);
+    }
+  }
+
+  downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+
+  // ─── CLIENT-SIDE CANVAS VIDEO RENDERER (BURN-IN CAPTIONS) ─────────────
+
+  async exportCanvasVideo({ exportType, exportRes, captions, proj, confirmExportBtn, modal }) {
+    const videoEl = this.player?.video || document.getElementById('main-video-player');
+    const videoSrc = proj.video_url || videoEl?.src || '/static/assets/demo_video.mp4';
+
+    if (!videoSrc) {
+      throw new Error('No video source available for rendering.');
+    }
+
+    // Determine dimensions based on aspect ratio & export resolution
+    const isLandscape = this.player?.aspectRatio === '16:9';
+    const isSquare = this.player?.aspectRatio === '1:1';
+
+    let width = 1080;
+    let height = 1920;
+    if (exportRes === '4k') {
+      width = isLandscape ? 3840 : (isSquare ? 2160 : 2160);
+      height = isLandscape ? 2160 : (isSquare ? 2160 : 3840);
+    } else if (exportRes === '720p') {
+      width = isLandscape ? 1280 : (isSquare ? 720 : 720);
+      height = isLandscape ? 720 : (isSquare ? 720 : 1280);
+    } else {
+      width = isLandscape ? 1920 : (isSquare ? 1080 : 1080);
+      height = isLandscape ? 1080 : (isSquare ? 1080 : 1920);
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d', { alpha: exportType === 'alpha' });
+
+    // Off-screen render video element
+    const renderVideo = document.createElement('video');
+    renderVideo.src = videoSrc;
+    renderVideo.crossOrigin = 'anonymous';
+    renderVideo.playsInline = true;
+    renderVideo.muted = false;
+
+    await new Promise((resolve) => {
+      renderVideo.onloadedmetadata = resolve;
+      renderVideo.onerror = () => resolve();
+      setTimeout(resolve, 3000);
+    });
+
+    const totalDuration = renderVideo.duration && !isNaN(renderVideo.duration) && renderVideo.duration > 0
+      ? renderVideo.duration
+      : (proj.duration || 15.0);
+
+    // Setup canvas stream and hook audio from video stream
+    const canvasStream = canvas.captureStream(30);
+    try {
+      const vidStream = renderVideo.captureStream ? renderVideo.captureStream() : (renderVideo.mozCaptureStream ? renderVideo.mozCaptureStream() : null);
+      if (vidStream) {
+        const audioTracks = vidStream.getAudioTracks();
+        if (audioTracks.length > 0) {
+          canvasStream.addTrack(audioTracks[0]);
+        }
+      }
+    } catch (e) {
+      console.warn("Audio stream track note:", e);
+    }
+
+    let mimeType = 'video/mp4;codecs=avc1,mp4a.40.2';
+    if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/mp4;codecs=avc1';
+    if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/mp4';
+    if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm;codecs=vp9,opus';
+    if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
+
+    const chunks = [];
+    const bitrate = exportRes === '4k' ? 16000000 : (exportRes === '1080p' ? 8000000 : 4000000);
+    const recorder = new MediaRecorder(canvasStream, {
+      mimeType,
+      videoBitsPerSecond: bitrate
+    });
+
+    recorder.ondataavailable = (e) => {
+      if (e.data && e.data.size > 0) chunks.push(e.data);
+    };
+
+    const stopPromise = new Promise((resolve) => {
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: mimeType });
+        const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+        const filename = `${(proj.title || 'harsh_video').replace(/[^\w\s-]/gi, '').replace(/\s+/g, '_')}_captioned.${ext}`;
+        this.downloadBlob(blob, filename);
+        resolve(filename);
+      };
+    });
+
+    recorder.start(100);
+
+    // Start video playback
+    try {
+      await renderVideo.play();
+    } catch (playErr) {
+      renderVideo.muted = true;
+      await renderVideo.play();
+    }
+
+    const style = this.player?.currentStyle || (window.TEMPLATES && window.TEMPLATES[0]?.style) || {};
+
+    // Animation & rendering frame loop
+    await new Promise((resolve) => {
+      let isDone = false;
+
+      const finish = () => {
+        if (isDone) return;
+        isDone = true;
+        renderVideo.pause();
+        try { recorder.requestData(); } catch(_) {}
+        recorder.stop();
+        resolve();
+      };
+
+      const renderLoop = () => {
+        if (isDone) return;
+
+        const curTime = renderVideo.currentTime;
+
+        // 1. Draw video background
+        if (exportType === 'alpha') {
+          ctx.clearRect(0, 0, width, height);
+        } else {
+          try {
+            ctx.drawImage(renderVideo, 0, 0, width, height);
+          } catch(drawErr) {}
+        }
+
+        // 2. Draw burned-in captions
+        this.drawCaptionsToCanvas(ctx, curTime, captions, style, width, height);
+
+        // 3. Update Progress UI
+        const percent = Math.min(99, Math.max(1, Math.round((curTime / totalDuration) * 100)));
+        confirmExportBtn.innerHTML = `
+          <span class="inline-flex items-center gap-2">
+            <svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+            Burning Captions (${percent}%)...
+          </span>
+        `;
+
+        if (curTime >= totalDuration - 0.05 || renderVideo.ended) {
+          finish();
+        } else {
+          requestAnimationFrame(renderLoop);
+        }
+      };
+
+      renderVideo.addEventListener('ended', finish);
+      requestAnimationFrame(renderLoop);
+    });
+
+    const savedFile = await stopPromise;
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.style.setProperty('display', 'none', 'important');
+    }
+    if (window.showToast) {
+      window.showToast(`🎉 Exported with Burned-In Captions: <b>${savedFile}</b>`);
+    }
+  }
+
+  drawCaptionsToCanvas(ctx, now, captions, s, width, height) {
+    if (!captions || captions.length === 0) return;
+
+    // Find active caption
+    const activeCap = captions.find(c => {
+      const st = Number(c.startTime !== undefined ? c.startTime : c.start);
+      const et = Number(c.endTime !== undefined ? c.endTime : c.end);
+      return now >= (st - 0.03) && now <= (et + 0.05);
+    });
+
+    if (!activeCap || !activeCap.text) return;
+
+    const rawWords = activeCap.text.split(/\s+/).filter(Boolean);
+    if (rawWords.length === 0) return;
+
+    const capStart = Number(activeCap.startTime !== undefined ? activeCap.startTime : activeCap.start);
+    const capEnd = Number(activeCap.endTime !== undefined ? activeCap.endTime : activeCap.end);
+    const capDur = Math.max(0.1, capEnd - capStart);
+    const wordDur = capDur / rawWords.length;
+    const words = rawWords.map((w, i) => ({
+      word: w,
+      start: capStart + (i * wordDur),
+      end: capStart + ((i + 1) * wordDur)
+    }));
+
+    // Scale factor: Preview is based on ~360px width
+    const scaleFactor = Math.max(1, width / 360);
+    const baseFontSize = Number(s.fontSize || 30);
+    const fontSize = Math.round(baseFontSize * scaleFactor);
+
+    // Font setup
+    const fontFamily = s.fontFamily || 'Montserrat';
+    const fontWeight = s.fontWeight || '900';
+    ctx.font = `${fontWeight} ${fontSize}px "${fontFamily}", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+    ctx.textBaseline = 'middle';
+
+    // Text transform helper
+    const transformText = (txt) => {
+      if (s.textTransform === 'uppercase') return txt.toUpperCase();
+      if (s.textTransform === 'lowercase') return txt.toLowerCase();
+      if (s.textTransform === 'capitalize') return txt.charAt(0).toUpperCase() + txt.slice(1);
+      return txt;
+    };
+
+    // Determine visible words based on displayMode
+    const displayMode = s.displayMode || this.player?.displayMode || 'chunk';
+    let visibleWords = [];
+
+    if (displayMode === 'single') {
+      const activeWord = words.find(w => now >= (w.start - 0.02) && now <= (w.end + 0.05));
+      visibleWords = [activeWord || words[0]];
+    } else if (displayMode === 'full') {
+      visibleWords = words;
+    } else {
+      // Chunk mode (2-3 words)
+      const chunkSize = 3;
+      const activeWordIdx = words.findIndex(w => now >= (w.start - 0.02) && now <= (w.end + 0.05));
+      let chunkStart = 0;
+      if (activeWordIdx >= 0) {
+        chunkStart = Math.floor(activeWordIdx / chunkSize) * chunkSize;
+      }
+      visibleWords = words.slice(chunkStart, chunkStart + chunkSize);
+    }
+
+    // Measure words
+    const spaceWidth = ctx.measureText(' ').width;
+    const measuredWords = visibleWords.map(w => {
+      const transformed = transformText(w.word);
+      return {
+        ...w,
+        transformed,
+        width: ctx.measureText(transformed).width
+      };
+    });
+
+    const totalTextWidth = measuredWords.reduce((acc, w) => acc + w.width, 0) + (spaceWidth * Math.max(0, measuredWords.length - 1));
+
+    // Calculate center coordinates
+    const posX = s.posX !== undefined ? s.posX : 50;
+    const posY = s.posY !== undefined ? s.posY : 78;
+    const targetCenterX = (posX / 100) * width;
+    const targetCenterY = (posY / 100) * height;
+
+    let startX = targetCenterX - (totalTextWidth / 2);
+    if (s.textAlign === 'left') startX = targetCenterX;
+    else if (s.textAlign === 'right') startX = targetCenterX - totalTextWidth;
+
+    // Draw background box if enabled
+    if (s.bgBox) {
+      const padX = 18 * scaleFactor;
+      const padY = 10 * scaleFactor;
+      const boxHeight = fontSize * 1.35;
+      const boxWidth = totalTextWidth + (padX * 2);
+      const boxX = startX - padX;
+      const boxY = targetCenterY - (boxHeight / 2);
+      const radius = 10 * scaleFactor;
+
+      ctx.save();
+      ctx.fillStyle = s.bgColor || 'rgba(0,0,0,0.75)';
+      ctx.beginPath();
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(boxX, boxY, boxWidth, boxHeight, radius);
+      } else {
+        ctx.rect(boxX, boxY, boxWidth, boxHeight);
+      }
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Draw individual words with animations / highlights
+    let curX = startX;
+
+    measuredWords.forEach(w => {
+      const isWordActive = (now >= (w.start - 0.02) && now <= (w.end + 0.05));
+      ctx.save();
+
+      // Shadow
+      if (s.shadow) {
+        ctx.shadowColor = 'rgba(0,0,0,0.95)';
+        ctx.shadowBlur = 8 * scaleFactor;
+        ctx.shadowOffsetY = 3 * scaleFactor;
+      }
+
+      if (isWordActive) {
+        const hlColor = s.highlightColor || '#FFE600';
+        ctx.fillStyle = hlColor;
+        ctx.shadowColor = hlColor;
+        ctx.shadowBlur = 12 * scaleFactor;
+      } else {
+        ctx.fillStyle = s.color || '#FFFFFF';
+      }
+
+      // Stroke
+      if (s.strokeWidth > 0) {
+        const strokePx = Math.min(s.strokeWidth * scaleFactor, 8 * scaleFactor);
+        ctx.lineWidth = strokePx;
+        ctx.strokeStyle = s.strokeColor || '#000000';
+        ctx.lineJoin = 'round';
+        ctx.strokeText(w.transformed, curX, targetCenterY);
+      }
+
+      // Fill
+      ctx.fillText(w.transformed, curX, targetCenterY);
+      ctx.restore();
+
+      curX += w.width + spaceWidth;
+    });
   }
 
   initInspectorDOM() {
