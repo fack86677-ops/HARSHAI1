@@ -30,6 +30,7 @@
       }
     }
   </script>
+  <link rel="stylesheet" href="/static/css/styles.css">
   <style>
     body { background-color: #06080F; color: #F8FAFC; }
     .glow-bg {
@@ -171,6 +172,27 @@
         <div class="mt-3 text-xs text-[#10B981] font-semibold">
           Alpha Channel & Burned MP4
         </div>
+      </div>
+    </div>
+
+    <!-- Quick Video Uploader Bar -->
+    <div class="p-6 rounded-3xl bg-gradient-to-r from-[#10162A]/90 via-[#0B0F19]/90 to-[#10162A]/90 border border-[#6366F1]/30 hover:border-[#6366F1] shadow-2xl flex flex-col md:flex-row items-center justify-between gap-5 transition duration-300 group cursor-pointer" onclick="window.location.href='/editor'">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-[#6366F1]/15 text-[#818CF8] group-hover:scale-110 transition flex items-center justify-center text-xl shadow-[0_0_20px_rgba(99,102,241,0.3)]">
+          🎥
+        </div>
+        <div>
+          <h3 class="text-base font-extrabold text-white group-hover:text-[#818CF8] transition flex items-center gap-2">
+            <span>Drop video here or start new project</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30">Auto Transcribe</span>
+          </h3>
+          <p class="text-xs text-[#94A3B8]">Supports MP4, MOV (ProRes), WebM, MP3 & WAV with word-by-word timestamps</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 shrink-0">
+        <span class="btn-glow-primary text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2">
+          <span>Open Caption Studio →</span>
+        </span>
       </div>
     </div>
 
